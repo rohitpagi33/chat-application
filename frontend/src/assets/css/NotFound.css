@@ -1,0 +1,60 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap");
+
+.notfound {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  font-family: 'Poppins', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: black;
+  overflow: hidden;
+  color: white;
+}
+
+.notfound__img {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+}
+
+.notfound__content {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  padding: 2rem 3rem;
+  border-radius: 1.5rem;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  max-width: 400px;
+  width: 90%;
+}
+
+.notfound__title {
+  font-size: 4rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.notfound__message {
+  font-size: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.notfound__button {
+  display: inline-block;
+  padding: 0.75rem 2rem;
+  border-radius: 0.5rem;
+  background-color: white;
+  color: black;
+  font-weight: 500;
+  transition: 0.3s;
+}
+
+.notfound__button:hover {
+  background-color: #f0f0f0;
+}
