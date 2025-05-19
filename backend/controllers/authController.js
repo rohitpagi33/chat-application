@@ -13,7 +13,7 @@ const client = twilio(
 
 const sendOTPViaSMS = async (mobile, otp) => {
   await client.messages.create({
-    body: `Your LoginApp OTP is: ${otp}`,
+    body: `Your ChatApp OTP is: ${otp}`,
     from: process.env.TWILIO_PHONE_NUMBER,
     to: `+91${mobile}`
   });
