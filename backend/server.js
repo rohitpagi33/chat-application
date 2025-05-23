@@ -13,6 +13,8 @@ app.use(express.json());
 app.use('/api/user', require('./routes/userRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
 app.use('/api/messages', require('./routes/messageRoutes'));
+app.use('/api/auth', require('./routes/authRoutes'));
+
 
 // Create server for socket.io
 const server = http.createServer(app);

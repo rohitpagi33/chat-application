@@ -1,15 +1,22 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Button, Form, ListGroup, Modal, InputGroup, FormControl } from 'react-bootstrap';
-import axios from 'axios';
-import { io } from 'socket.io-client';
+import React, { useState, useEffect, useRef } from "react";
+import {
+  Button,
+  Form,
+  ListGroup,
+  Modal,
+  InputGroup,
+  FormControl,
+} from "react-bootstrap";
+import axios from "axios";
+import { io } from "socket.io-client";
 
-const socket = io('http://localhost:5000'); // socket.io server
+const socket = io("http://localhost:5000"); // socket.io server
 
 const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [messages, setMessages] = useState([]);
-  const [newMsg, setNewMsg] = useState('');
+  const [newMsg, setNewMsg] = useState("");
   const [showStartChatModal, setShowStartChatModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   // const [users, setUsers] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const messagesEndRef = useRef(null);
@@ -18,27 +25,29 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     if (chat?._id) {
       fetchMessages(chat._id);
 
-      socket.emit('join-chat', chat._id);
+      socket.emit("join-chat", chat._id);
 
-      socket.on('receive-message', (msg) => {
+      socket.on("receive-message", (msg) => {
         if (msg.chat === chat._id) {
-          setMessages(prev => [...prev, msg]);
+          setMessages((prev) => [...prev, msg]);
         }
       });
     }
 
     return () => {
-      socket.off('receive-message');
+      socket.off("receive-message");
     };
   }, [chat]);
 
   const fetchMessages = async (chatId) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/messages/${chatId}`);
+      const res = await axios.get(
+        `http://localhost:5000/api/messages/${chatId}`
+      );
       setMessages(res.data);
       scrollToBottom();
     } catch (err) {
-      console.error('Failed to fetch messages', err);
+      console.error("Failed to fetch messages", err);
     }
   };
 
@@ -51,45 +60,53 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       content: newMsg.trim(),
     };
 
-    socket.emit('send-message', data);
-    setMessages(prev => [...prev, { ...data, _id: Date.now(), sender: { _id: userId }, createdAt: new Date() }]);
-    setNewMsg('');
+    socket.emit("send-message", data);
+    setMessages((prev) => [
+      ...prev,
+      {
+        ...data,
+        _id: Date.now(),
+        sender: { _id: userId },
+        createdAt: new Date(),
+      },
+    ]);
+    setNewMsg("");
     scrollToBottom();
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   // Search users to start new chat
-const handleSearch = async (searchTerm) => {
-  console.log('handleSearch called with:', searchTerm);  // <--- Add this line
-  if (!searchTerm.trim()) return;
+  const handleSearch = async (searchTerm) => {
+    console.log("handleSearch called with:", searchTerm); // <--- Add this line
+    if (!searchTerm.trim()) return;
 
-  try {
-    const res = await axios.get(`http://localhost:5000/api/user/users?search=${searchTerm.trim()}`);
-    setSearchResults(res.data.filter(u => u._id !== userId)); 
-    console.log('searchResults:', searchResults);
-// <-- you should use setSearchResults, not setUsers
-  } catch (error) {
-    console.error('User search failed', error);
-  }
-};
-
+    try {
+      const res = await axios.post("http://localhost:5000/api/user/search", {
+        search: searchTerm.trim(),
+      });
+      setSearchResults(res.data.filter((u) => u._id !== userId));
+      // <-- you should use setSearchResults, not setUsers
+    } catch (error) {
+      console.error("User search failed", error);
+    }
+  };
 
   // Start new chat with selected user
   const handleCreateChat = async (otherUserId) => {
     try {
       const res = await axios.post(`http://localhost:5000/api/chat`, {
         userId,
-        otherUserId
+        otherUserId,
       });
       onStartNewChat(res.data);
       setShowStartChatModal(false);
-      setSearchTerm('');
+      setSearchTerm("");
       setSearchResults([]);
     } catch (err) {
-      console.error('Create chat failed', err);
+      console.error("Create chat failed", err);
     }
   };
 
@@ -97,7 +114,9 @@ const handleSearch = async (searchTerm) => {
     return (
       <div className="d-flex flex-column h-100 justify-content-center align-items-center">
         <p>No chat selected</p>
-        <Button onClick={() => setShowStartChatModal(true)}>Start New Chat</Button>
+        <Button onClick={() => setShowStartChatModal(true)}>
+          Start New Chat
+        </Button>
 
         <StartChatModal
           show={showStartChatModal}
@@ -115,19 +134,30 @@ const handleSearch = async (searchTerm) => {
   return (
     <div className="d-flex flex-column h-100">
       <div className="border-bottom p-3">
-        <h5>{chat.isGroupChat ? chat.chatName : chat.users.find(u => u._id !== userId)?.fullName}</h5>
+        <h5>
+          {chat.isGroupChat
+            ? chat.chatName
+            : chat.users.find((u) => u._id !== userId)?.fullName}
+        </h5>
       </div>
 
-      <div className="flex-grow-1 overflow-auto p-3" style={{ backgroundColor: '#f8f9fa' }}>
+      <div
+        className="flex-grow-1 overflow-auto p-3"
+        style={{ backgroundColor: "#f8f9fa" }}
+      >
         <ListGroup>
-          {messages.map(msg => (
+          {messages.map((msg) => (
             <ListGroup.Item
               key={msg._id}
-              className={msg.sender._id === userId ? 'text-end' : 'text-start'}
+              className={msg.sender._id === userId ? "text-end" : "text-start"}
             >
-              <small><b>{msg.sender.fullName || msg.sender.username}</b></small>
+              <small>
+                <b>{msg.sender.fullName || msg.sender.username}</b>
+              </small>
               <p>{msg.content}</p>
-              <small className="text-muted">{new Date(msg.createdAt).toLocaleTimeString()}</small>
+              <small className="text-muted">
+                {new Date(msg.createdAt).toLocaleTimeString()}
+              </small>
             </ListGroup.Item>
           ))}
           <div ref={messagesEndRef} />
@@ -135,7 +165,7 @@ const handleSearch = async (searchTerm) => {
       </div>
 
       <Form
-        onSubmit={e => {
+        onSubmit={(e) => {
           e.preventDefault();
           sendMessage();
         }}
@@ -145,16 +175,26 @@ const handleSearch = async (searchTerm) => {
           <FormControl
             placeholder="Type your message..."
             value={newMsg}
-            onChange={e => setNewMsg(e.target.value)}
+            onChange={(e) => setNewMsg(e.target.value)}
           />
-          <Button type="submit" variant="primary">Send</Button>
+          <Button type="submit" variant="primary">
+            Send
+          </Button>
         </InputGroup>
       </Form>
     </div>
   );
 };
 
-const StartChatModal = ({ show, onHide, searchTerm, setSearchTerm, onSearch, searchResults, onCreateChat }) => {
+const StartChatModal = ({
+  show,
+  onHide,
+  searchTerm,
+  setSearchTerm,
+  onSearch,
+  searchResults,
+  onCreateChat,
+}) => {
   return (
     <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
@@ -165,18 +205,15 @@ const StartChatModal = ({ show, onHide, searchTerm, setSearchTerm, onSearch, sea
           <FormControl
             placeholder="Search users by name or username"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && onSearch(searchTerm)}
-
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSearch(searchTerm)}
           />
-         <Button onClick={() => onSearch(searchTerm)}>Search</Button>
-
-
+          <Button onClick={() => onSearch(searchTerm)}>Search</Button>
         </InputGroup>
 
         <ListGroup>
           {searchResults.length === 0 && <p>No users found</p>}
-          {searchResults.map(user => (
+          {searchResults.map((user) => (
             <ListGroup.Item
               key={user._id}
               action
