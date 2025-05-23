@@ -30,5 +30,5 @@ This project is currently under active development. The core structure is in pla
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/mern-chat-app.git
-cd mern-chat-app
+git clone https://github.com/rohitpagi33/chat-application
+cd mern-chat-application
