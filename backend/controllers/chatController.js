@@ -1,9 +1,6 @@
 const Chat = require('../models/Chat');
+const User = require('../models/User');
 
-/**
- * @desc    Create or fetch one-on-one chat between two users
- * @route   POST /api/chat/create
- */
 const createOrGetDirectChat = async (req, res) => {
   const { userId, otherUserId } = req.body;
 
@@ -18,6 +15,7 @@ const createOrGetDirectChat = async (req, res) => {
     }).populate('users', 'username fullName');
 
     if (chat) {
+      console.log('🟢 Existing chat found');
       return res.json(chat);
     }
 
@@ -30,12 +28,15 @@ const createOrGetDirectChat = async (req, res) => {
     await chat.save();
 
     chat = await Chat.findById(chat._id).populate('users', 'username fullName');
+
+    console.log('🆕 New chat created');
     res.status(201).json(chat);
   } catch (error) {
-    console.error('Error creating chat:', error);
+    console.error('❌ Error creating chat:', error);
     res.status(500).json({ error: 'Failed to create chat' });
   }
 };
+
 
 module.exports = {
   createOrGetDirectChat,
