@@ -96,19 +96,22 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
   // Start new chat with selected user
   const handleCreateChat = async (otherUserId) => {
-    try {
-      const res = await axios.post(`http://localhost:5000/api/chat`, {
-        userId,
-        otherUserId,
-      });
-      onStartNewChat(res.data);
-      setShowStartChatModal(false);
-      setSearchTerm("");
-      setSearchResults([]);
-    } catch (err) {
-      console.error("Create chat failed", err);
-    }
-  };
+  try {
+    const res = await axios.post(`http://localhost:5000/api/chat/create`, {
+      userId,
+      otherUserId,
+    });
+    onStartNewChat(res.data);
+    setShowStartChatModal(false);
+    setSearchTerm("");
+    setSearchResults([]);
+  } catch (err) {
+    console.error("Create chat failed", err);
+  }
+};
+
+
+
 
   if (!chat) {
     return (

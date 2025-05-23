@@ -1,42 +1,42 @@
 const Chat = require('../models/Chat');
-const User = require('../models/User');
 
-exports.accessChat = async (req, res) => {
-  const { userId } = req.body;
+/**
+ * @desc    Create or fetch one-on-one chat between two users
+ * @route   POST /api/chat/create
+ */
+const createOrGetDirectChat = async (req, res) => {
+  const { userId, otherUserId } = req.body;
 
-  if (!userId) {
-    return res.status(400).send('UserId param not sent');
+  if (!userId || !otherUserId) {
+    return res.status(400).json({ error: 'userId and otherUserId are required' });
   }
 
   try {
     let chat = await Chat.findOne({
       isGroupChat: false,
-      users: { $all: [req.user._id, userId] },
-    }).populate('users', '-password').populate('latestMessage');
+      users: { $all: [userId, otherUserId], $size: 2 }
+    }).populate('users', 'username fullName');
 
     if (chat) {
-      return res.send(chat);
+      return res.json(chat);
     }
 
-    const newChat = await Chat.create({
-      chatName: 'sender',
+    chat = new Chat({
+      chatName: 'Direct Chat',
       isGroupChat: false,
-      users: [req.user._id, userId],
+      users: [userId, otherUserId]
     });
 
-    const fullChat = await newChat.populate('users', '-password').execPopulate();
-    res.status(200).send(fullChat);
+    await chat.save();
 
+    chat = await Chat.findById(chat._id).populate('users', 'username fullName');
+    res.status(201).json(chat);
   } catch (error) {
-    res.status(500).json({ message: 'Failed to access or create chat', error });
+    console.error('Error creating chat:', error);
+    res.status(500).json({ error: 'Failed to create chat' });
   }
 };
 
-exports.getAllUsersExceptCurrent = async (req, res) => {
-  try {
-    const users = await User.find({ _id: { $ne: req.user._id } });
-    res.json(users);
-  } catch (err) {
-    res.status(500).json({ message: 'Error fetching users', error: err });
-  }
+module.exports = {
+  createOrGetDirectChat,
 };
