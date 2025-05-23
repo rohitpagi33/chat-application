@@ -1,28 +1,84 @@
+require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const cors = require('cors');
-
-dotenv.config();
+const http = require('http');
+const { Server } = require('socket.io');
 
 const app = express();
-app.use(cors({
-  origin: 'http://localhost:5173', // frontend origin
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
+app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
 
-// Routes
-const authRoutes = require('./routes/authRoutes');
-app.use('/api/auth', authRoutes);
+// Import routes
+app.use('/api/user', require('./routes/userRoutes'));
+app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/messages', require('./routes/messageRoutes'));
 
-// Connect to MongoDB
+// Create server for socket.io
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: 'http://localhost:5173',
+    methods: ['GET', 'POST'],
+    credentials: true,
+  },
+});
+
+// Socket.io logic
+const Message = require('./models/Message');
+const Chat = require('./models/Chat');
+
+io.on('connection', (socket) => {
+  console.log('🟢 Client connected:', socket.id);
+
+  socket.on('send-message', async (data) => {
+    try {
+      const { senderId, chatId, content, media, messageType } = data;
+
+      const newMessage = new Message({
+        sender: senderId,
+        chat: chatId,
+        content,
+        media,
+        messageType: messageType || 'text',
+        readBy: [senderId],
+      });
+
+      const savedMessage = await newMessage.save();
+
+      // Update latestMessage on chat
+      await Chat.findByIdAndUpdate(chatId, { latestMessage: savedMessage._id });
+
+      // Populate sender before emitting
+      const populatedMessage = await savedMessage.populate('sender', 'username fullName');
+
+      io.to(chatId).emit('receive-message', populatedMessage);
+    } catch (err) {
+      console.error('❌ Socket error:', err);
+    }
+  });
+
+  // Join room for chat messages
+  socket.on('join-chat', (chatId) => {
+    socket.join(chatId);
+    console.log(`Socket ${socket.id} joined chat room ${chatId}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log('🔴 Client disconnected:', socket.id);
+  });
+});
+
+// Connect Mongo and start
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB connected');
-    app.listen(process.env.PORT || 5000, () => {
-      console.log(`🚀 Server running on port ${process.env.PORT}`);
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
-  .catch(err => console.error('MongoDB error:', err));
+  .catch(err => {
+    console.error('❌ MongoDB connection error:', err);
+  });

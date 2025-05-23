@@ -1,36 +1,27 @@
 import React, { useState } from 'react';
-import { InputGroup, FormControl, Button } from 'react-bootstrap';
+import { Button, Form } from 'react-bootstrap';
 
 const MessageInput = ({ onSend }) => {
-  const [text, setText] = useState('');
+  const [message, setMessage] = useState('');
 
-  const handleSend = () => {
-    if (text.trim() !== '') {
-      onSend(text);
-      setText('');
-    }
-  };
-
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
-      handleSend();
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (message.trim()) {
+      onSend(message);
+      setMessage('');
     }
   };
 
   return (
-    <div className="p-2 border-top">
-      <InputGroup>
-        <FormControl
-          placeholder="Type a message..."
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyPress={handleKeyPress}
-        />
-        <Button variant="primary" onClick={handleSend}>
-          Send
-        </Button>
-      </InputGroup>
-    </div>
+    <Form onSubmit={handleSubmit} className="d-flex mt-2">
+      <Form.Control
+        type="text"
+        placeholder="Type your message..."
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      />
+      <Button type="submit" className="ms-2">Send</Button>
+    </Form>
   );
 };
 
