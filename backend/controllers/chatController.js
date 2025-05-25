@@ -1,43 +1,54 @@
 const Chat = require('../models/Chat');
 const User = require('../models/User');
 
-const createOrGetDirectChat = async (req, res) => {
-  const { userId, otherUserId } = req.body;
-
-  if (!userId || !otherUserId) {
-    return res.status(400).json({ error: 'userId and otherUserId are required' });
-  }
-
+// Create a new chat between two users
+const createChat = async (req, res) => {
   try {
-    let chat = await Chat.findOne({
-      isGroupChat: false,
-      users: { $all: [userId, otherUserId], $size: 2 }
-    }).populate('users', 'username fullName');
+    const { currentUserId, currentotherUserId } = req.body;
 
-    if (chat) {
-      console.log('🟢 Existing chat found');
-      return res.json(chat);
+    // Check if both user IDs are provided
+    if (!currentUserId || !currentotherUserId) {
+      return res.status(400).json({ error: 'User IDs are required' });
     }
 
-    chat = new Chat({
-      chatName: 'Direct Chat',
-      isGroupChat: false,
-      users: [userId, otherUserId]
+    // Check if both users exist
+    const currentUser = await User.findById(currentUserId);
+    const otherUser = await User.findById(currentotherUserId);
+
+    if (!currentUser || !otherUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Create the chat
+    const newChat = new Chat({
+      users: [currentUserId, currentotherUserId],
+      chatName: `${currentUser.fullName} - ${otherUser.fullName}`,  // Optionally name the chat
     });
 
-    await chat.save();
+    await newChat.save();
 
-    chat = await Chat.findById(chat._id).populate('users', 'username fullName');
-
-    console.log('🆕 New chat created');
-    res.status(201).json(chat);
-  } catch (error) {
-    console.error('❌ Error creating chat:', error);
-    res.status(500).json({ error: 'Failed to create chat' });
+    return res.status(201).json(newChat);
+  } catch (err) {
+    console.error('Error creating chat:', err);
+    return res.status(500).json({ error: 'Failed to create chat' });
   }
 };
 
+exports.getRecentChats = async (req, res) => {
+  const { currentUserId } = req.body;
 
-module.exports = {
-  createOrGetDirectChat,
+  try {
+    // Fetch chats where the user is one of the participants and populate user details
+    const chats = await Chat.find({ users: currentUserId })
+      .populate('users', 'fullName username')  // Populate user details like fullName and username
+      .sort({ updatedAt: -1 })  // Sort by latest chat activity
+      .limit(10);  // Limit to 10 most recent chats
+
+    res.status(200).json(chats);
+  } catch (error) {
+    console.error('Error fetching recent chats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
+
+module.exports = { createChat };

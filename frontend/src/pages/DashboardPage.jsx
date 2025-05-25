@@ -5,7 +5,9 @@ import Sidebar from '../components/Sidebar';
 import ChatWindow from '../components/ChatWindow';
 
 const DashboardPage = () => {
-  const userId = localStorage.getItem('userId'); // get logged in userId from localStorage
+  const user = JSON.parse(localStorage.getItem('user'));
+  const userId = user.id; // get logged in userId from localStorage
+  
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
 

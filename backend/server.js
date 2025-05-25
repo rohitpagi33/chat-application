@@ -3,11 +3,14 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const http = require('http');
+const bodyParser = require('body-parser');
 const { Server } = require('socket.io');
 
 const app = express();
 app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
 app.use(express.json());
+app.use(bodyParser.json());
+
 
 // Import routes
 app.use('/api/user', require('./routes/userRoutes'));

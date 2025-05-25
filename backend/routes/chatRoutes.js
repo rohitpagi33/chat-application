@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const { createOrGetDirectChat } = require('../controllers/chatController');
+const { createChat } = require('../controllers/chatController');
 
-router.post('/create', createOrGetDirectChat);
+// Route to create a new chat
+router.post('/create', createChat);
 
 module.exports = router;

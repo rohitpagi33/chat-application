@@ -109,7 +109,7 @@ const verifyLoginOTP = async (req, res) => {
   if (!user) return res.status(400).json({ message: 'User not found' });
 
   // Assume OTP verification passed
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '15d' });
   res.status(200).json({ user, token });
 };
 exports.verifyLoginOTP = verifyLoginOTP;
