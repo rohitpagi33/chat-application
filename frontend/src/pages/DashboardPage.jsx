@@ -1,22 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Button } from 'react-bootstrap';
-import axios from 'axios';
-import Sidebar from '../components/Sidebar';
-import ChatWindow from '../components/ChatWindow';
+import React, { useState, useEffect } from "react";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import axios from "axios";
+import Sidebar from "../components/Sidebar";
+import ChatWindow from "../components/ChatWindow";
 
 const DashboardPage = () => {
-  const user = JSON.parse(localStorage.getItem('user'));
-  const userId = user._id; // get logged in userId from localStorage
-  
+  const user = JSON.parse(localStorage.getItem("user"));
+  const currentUserId = user._id; // get logged in userId from localStorage
+
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
 
   const fetchChats = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/chat?userId=${userId}`);
+      console.log("Sending currentUserId:", currentUserId);
+
+      const res = await axios.post("http://localhost:5000/api/chat/fetch", {
+        currentUserId,
+      });
       setChats(res.data);
     } catch (err) {
-      console.error('Failed to fetch chats', err);
+      console.error("Failed to fetch chats", err);
     }
   };
 
@@ -25,7 +29,7 @@ const DashboardPage = () => {
   }, []);
 
   const handleStartNewChat = (chat) => {
-    setChats(prev => [chat, ...prev]);
+    setChats((prev) => [chat, ...prev]);
     setSelectedChat(chat);
   };
 
@@ -37,13 +41,13 @@ const DashboardPage = () => {
             chats={chats}
             selectedChat={selectedChat}
             onSelectChat={setSelectedChat}
-            userId={userId}
+            userId={currentUserId}
           />
         </Col>
         <Col md={8} className="p-0">
           <ChatWindow
             chat={selectedChat}
-            userId={userId}
+            userId={currentUserId}
             onStartNewChat={handleStartNewChat}
           />
         </Col>
