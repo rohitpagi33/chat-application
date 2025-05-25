@@ -13,9 +13,9 @@ const MessageInput = ({ onSend }) => {
   };
 
   return (
-    <Form onSubmit={handleSubmit} className="d-flex mt-2">
+    <Form onSubmit={handleSubmit} className="d-flex mt-2 text-light">
       <Form.Control
-        type="text"
+        type="text"    
         placeholder="Type your message..."
         value={message}
         onChange={(e) => setMessage(e.target.value)}

@@ -1,46 +1,49 @@
 const Chat = require("../models/Chat");
 const User = require("../models/User");
+const mongoose = require("mongoose");
 
 const createChat = async (req, res) => {
   try {
-    const { currentUserId, currentotherUserId } = req.body;
+    let { currentUserId, currentotherUserId } = req.body;
 
     if (!currentUserId || !currentotherUserId) {
       return res.status(400).json({ error: "User IDs are required" });
     }
 
-    // Find existing 1-on-1 chat (not group) between these users
+    // Convert to mongoose ObjectId explicitly
+    currentUserId = mongoose.Types.ObjectId(currentUserId);
+    currentotherUserId = mongoose.Types.ObjectId(currentotherUserId);
+
+    // Find existing 1-on-1 chat with exactly those users
     const existingChat = await Chat.findOne({
-      isGroupChat: false,                 // Ensure it's not a group chat
-      users: {
-        $all: [currentUserId, currentotherUserId], // Contains both users
-        $size: 2                           // Exactly 2 users (1-on-1 chat)
-      }
+      isGroupChat: false,
+      users: { $size: 2, $all: [currentUserId, currentotherUserId] },
     }).populate("users", "fullName username");
 
     if (existingChat) {
-      // Return existing chat if found
       return res.status(200).json(existingChat);
     }
 
-    // Verify users exist (optional but good practice)
+    // Verify users exist
     const currentUser = await User.findById(currentUserId);
     const otherUser = await User.findById(currentotherUserId);
     if (!currentUser || !otherUser) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Create new 1-on-1 chat
+    const userIds = [currentUserId, currentotherUserId].sort();
+
     const newChat = new Chat({
       chatName: `${currentUser.fullName} - ${otherUser.fullName}`,
       isGroupChat: false,
-      users: [currentUserId, currentotherUserId],
+      users: userIds,
     });
-
     await newChat.save();
 
-    // Populate users before sending response
-    const fullChat = await newChat.populate("users", "fullName username").execPopulate();
+    // Populate before sending
+    const fullChat = await newChat
+      .populate("users", "fullName username")
+      .execPopulate();
 
     return res.status(201).json(fullChat);
   } catch (err) {
@@ -70,6 +73,4 @@ const fetchChat = async (req, res) => {
   }
 };
 
-
 module.exports = { createChat, fetchChat };
-
