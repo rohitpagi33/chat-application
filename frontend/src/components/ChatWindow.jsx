@@ -330,9 +330,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     
 const userId = JSON.parse(localStorage.getItem('user'));
 const currentotherUserId = otherUserId._id; // Ensure we get the ID from the selected user object
-const currentUserId = userId.id; // Create an object with the ID  
+const currentUserId = userId._id; // Create an object with the ID  
 
-    console.log("UserId:", userId.id); // Log the current user ID
+    console.log("UserId:", userId._id); // Log the current user ID
   console.log("OtherUserId:", otherUserId._id);
   try {
     const res = await axios.post("http://localhost:5000/api/chat/create", {
