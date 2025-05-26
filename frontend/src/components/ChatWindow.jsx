@@ -107,10 +107,12 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
   const handleCreateChat = async (otherUserId) => {
     const userData = JSON.parse(localStorage.getItem("user"));
+    const currentUserId = userData._id;
+    const currentotherUserId = otherUserId._id;
     try {
       const res = await axios.post("http://localhost:5000/api/chat/create", {
-        currentUserId: userData._id,
-        currentotherUserId: otherUserId._id,
+        currentUserId,
+        currentotherUserId
       });
 
       onStartNewChat(res.data);
@@ -118,6 +120,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       setSearchTerm("");
       setSearchResults([]);
     } catch (err) {
+      //console.log(currentUserId, currentotherUserId);
       console.error("Create chat failed", err.response?.data || err);
     }
   };
@@ -257,6 +260,7 @@ const StartChatModal = ({
       <Modal.Body>
         <InputGroup className="mb-3">
           <FormControl
+            className="mb-3"
             placeholder="Search users by name or username"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
