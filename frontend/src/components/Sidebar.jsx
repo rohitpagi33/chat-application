@@ -23,6 +23,7 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
               active={selectedChat?._id === chat._id}
               onClick={() => onSelectChat(chat)}
               className="d-flex justify-content-between align-items-start"
+              style={{ cursor: "pointer"}}
             >
               <div className="ms-2 me-auto">
                 <div className="fw-bold">{chatTitle}</div>

@@ -17,7 +17,7 @@ const MiniSidebar = ({ onOpenSettings, onCreateGroup }) => {
           overlay={<Tooltip>{btn.tooltip}</Tooltip>}
         >
           <div
-            className="mb-3 p-2 rounded hover-bg"
+            className="mb-3 p-2 rounded text-black hover-bg"
             role="button"
             onClick={btn.action}
           >

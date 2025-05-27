@@ -12,6 +12,7 @@ const DashboardPage = () => {
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
 
+  // Fetch chats for the current user
   const fetchChats = async () => {
     try {
       const res = await axios.post("http://localhost:5000/api/chat/fetch", {
@@ -23,13 +24,20 @@ const DashboardPage = () => {
     }
   };
 
+  // Fetch chats on page load and whenever chats are updated
   useEffect(() => {
     fetchChats();
-  }, []);
+  }, [chats]); // Whenever chats change, re-fetch
 
-  const handleStartNewChat = (chat) => {
-    setChats((prev) => [chat, ...prev]);
-    setSelectedChat(chat);
+  // Handle new chat creation (no duplicates in sidebar)
+  const handleStartNewChat = (newChat) => {
+    setChats((prevChats) => {
+      // Avoid duplicates
+      const isDuplicate = prevChats.some((chat) => chat._id === newChat._id);
+      if (isDuplicate) return prevChats;
+      return [newChat, ...prevChats];
+    });
+    setSelectedChat(newChat);
   };
 
   const handleOpenSettings = () => {
