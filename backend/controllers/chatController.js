@@ -11,8 +11,8 @@ const createChat = async (req, res) => {
     }
 
     // Convert to mongoose ObjectId explicitly
-    currentUserId = mongoose.Types.ObjectId(currentUserId);
-    currentotherUserId = mongoose.Types.ObjectId(currentotherUserId);
+    currentUserId = new mongoose.Types.ObjectId(currentUserId);
+    currentotherUserId = new mongoose.Types.ObjectId(currentotherUserId);
 
     // Find existing 1-on-1 chat with exactly those users
     const existingChat = await Chat.findOne({
@@ -41,9 +41,7 @@ const createChat = async (req, res) => {
     await newChat.save();
 
     // Populate before sending
-    const fullChat = await newChat
-      .populate("users", "fullName username")
-      .execPopulate();
+    const fullChat = await newChat.populate("users", "fullName username").execPopulate();
 
     return res.status(201).json(fullChat);
   } catch (err) {
@@ -54,7 +52,7 @@ const createChat = async (req, res) => {
 
 const fetchChat = async (req, res) => {
   try {
-    console.log("Request body:", req.body); // ✅ Add this
+    console.log("Request body:", req.body);
     const { currentUserId } = req.body;
 
     if (!currentUserId) {
