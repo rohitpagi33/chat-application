@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Paperclip, EmojiSmile, At, Send } from "react-bootstrap-icons";
+import { Paperclip, EmojiSmile, At, Send, Check, CheckAll } from "react-bootstrap-icons";
 import "../App.css";
 import {
   Button,
@@ -38,6 +38,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           scrollToBottom();
         }
       });
+
+      // Send read confirmation when opening the chat
+      socket.emit("mark-read", { chatId: chat._id, userId });
     }
 
     return () => {
@@ -70,18 +73,10 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     };
 
     socket.emit("send-message", data);
-    setMessages((prev) => [
-      ...prev,
-      {
-        ...data,
-        _id: Date.now(),
-        sender: { _id: userId },
-        createdAt: new Date(),
-      },
-    ]);
-    setNewMsg("");
+    setNewMsg(""); // Clear input
     scrollToBottom();
   };
+
 
   const scrollToBottom = () => {
     setTimeout(
@@ -175,28 +170,42 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             {messages.map((msg) => (
               <ListGroup.Item
                 key={msg._id}
-                className={`mb-2 rounded shadow-sm px-3 py-2 ${
-                  msg.sender._id === userId
-                    ? "bg-primary text-white ms-auto"
-                    : "bg-light me-auto"
-                }`}
+                className={`mb-2 rounded shadow-sm px-3 py-2 ${msg.sender._id === userId
+                  ? "bg-primary text-white ms-auto"
+                  : "bg-light me-auto"
+                  }`}
                 style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
               >
                 <div className="small fw-bold">
                   {msg.sender.fullName || msg.sender.username}
                 </div>
                 <div>{msg.content}</div>
-                <div className="text-end">
-                  <small className="text-muted ">
-                    {new Date(msg.createdAt).toLocaleTimeString()}
-                  </small>
-                </div>
+
+                <div className="d-flex justify-content-end align-items-center mt-2" style={{ fontSize: "0.75rem" }}>
+  <div className="d-flex align-items-center gap-1">
+    <span className="text-light">
+      {new Date(msg.createdAt).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      })}
+    </span>
+    {msg.sender._id === userId && (
+      <span className="text-light">
+        {msg.isRead ? <CheckAll size={14} /> : <Check size={14} />}
+      </span>
+    )}
+  </div>
+</div>
+
+
               </ListGroup.Item>
             ))}
             <div ref={messagesEndRef} />
           </ListGroup>
         )}
       </div>
+
+      
 
       {/* Input */}
       <Form
