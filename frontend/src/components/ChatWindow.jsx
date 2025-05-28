@@ -31,20 +31,37 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     if (chat?._id) {
       fetchMessages(chat._id);
       socket.emit("join-chat", chat._id);
+      
+      // Send read confirmation when opening the chat
+      socket.emit("mark-read", { chatId: chat._id, userId });
 
       socket.on("receive-message", (msg) => {
         if (msg.chat === chat._id) {
+          
           setMessages((prev) => [...prev, msg]);
           scrollToBottom();
-        }
-      });
 
-      // Send read confirmation when opening the chat
+          if (msg.sender._id !== userId) {
       socket.emit("mark-read", { chatId: chat._id, userId });
     }
+        }
+      });
+       socket.on("messages-read", ({ chatId, userId: readerId }) => {
+    if (chatId === chat?._id && readerId !== userId) {
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.sender._id === userId ? { ...msg, isRead: true } : msg
+        )
+      );
+    }
+  });
+    }
+
+   
 
     return () => {
       socket.off("receive-message");
+      socket.off("messages-read");
     };
   }, [chat]);
 
@@ -183,7 +200,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
                 <div className="d-flex justify-content-end align-items-center mt-2" style={{ fontSize: "0.75rem" }}>
   <div className="d-flex align-items-center gap-1">
-    <span className="text-light">
+    <span className="text-dark">
       {new Date(msg.createdAt).toLocaleTimeString([], {
         hour: '2-digit',
         minute: '2-digit',

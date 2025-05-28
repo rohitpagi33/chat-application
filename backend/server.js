@@ -37,6 +37,20 @@ const Chat = require('./models/Chat');
 io.on('connection', (socket) => {
   console.log('🟢 Client connected:', socket.id);
 
+  socket.on('mark-read', async ({ chatId, userId }) => {
+    try {
+      // Update all messages in the chat not sent by the user, mark as read
+      await Message.updateMany(
+        { chat: chatId, sender: { $ne: userId }, isRead: false },
+        { $set: { isRead: true }, $addToSet: { readBy: userId } }
+      );
+      // Optionally, emit to other users in the chat
+      socket.to(chatId).emit('messages-read', { chatId, userId });
+    } catch (err) {
+      console.error('Error marking messages as read:', err);
+    }
+  });
+
   socket.on('send-message', async (data) => {
     try {
       const { senderId, chatId, content, media, messageType } = data;
