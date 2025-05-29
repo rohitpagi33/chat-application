@@ -52,7 +52,7 @@ const createChat = async (req, res) => {
 
 const fetchChat = async (req, res) => {
   try {
-    console.log("Request body:", req.body);
+    //console.log("Request body:", req.body);
     const { currentUserId } = req.body;
 
     if (!currentUserId) {
