@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Paperclip, EmojiSmile, At, Send, Check, CheckAll } from "react-bootstrap-icons";
+import {
+  Paperclip,
+  EmojiSmile,
+  At,
+  Send,
+  Check,
+  CheckAll,
+} from "react-bootstrap-icons";
 import "../App.css";
 import {
   Button,
@@ -27,41 +34,47 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [searching, setSearching] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // Add at the top with other useState
+  const [onlineUsers, setOnlineUsers] = useState([]);
+
   useEffect(() => {
     if (chat?._id) {
+
+      socket.emit("user-online", userId);
       fetchMessages(chat._id);
       socket.emit("join-chat", chat._id);
-      
-      // Send read confirmation when opening the chat
       socket.emit("mark-read", { chatId: chat._id, userId });
+
+      socket.on("update-online-users", (users) => {
+        setOnlineUsers(users);
+        console.log("Online users updated:", users);
+      });
 
       socket.on("receive-message", (msg) => {
         if (msg.chat === chat._id) {
-          
           setMessages((prev) => [...prev, msg]);
           scrollToBottom();
 
           if (msg.sender._id !== userId) {
-      socket.emit("mark-read", { chatId: chat._id, userId });
-    }
+            socket.emit("mark-read", { chatId: chat._id, userId });
+          }
         }
       });
-       socket.on("messages-read", ({ chatId, userId: readerId }) => {
-    if (chatId === chat?._id && readerId !== userId) {
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.sender._id === userId ? { ...msg, isRead: true } : msg
-        )
-      );
+      socket.on("messages-read", ({ chatId, userId: readerId }) => {
+        if (chatId === chat?._id && readerId !== userId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.sender._id === userId ? { ...msg, isRead: true } : msg
+            )
+          );
+        }
+      });
     }
-  });
-    }
-
-   
 
     return () => {
       socket.off("receive-message");
       socket.off("messages-read");
+      socket.off("update-online-users");
     };
   }, [chat]);
 
@@ -94,7 +107,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     scrollToBottom();
   };
 
-
   const scrollToBottom = () => {
     setTimeout(
       () => messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }),
@@ -124,7 +136,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     try {
       const res = await axios.post("http://localhost:5000/api/chat/create", {
         currentUserId,
-        currentotherUserId
+        currentotherUserId,
       });
 
       onStartNewChat(res.data);
@@ -171,6 +183,16 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             ? chat.chatName
             : chat.users.find((u) => u._id !== userId)?.fullName}
         </h5>
+        {!chat.isGroupChat &&
+          onlineUsers.includes(
+            String(
+              chat.users.find((u) => String(u._id) !== String(userId))?._id
+            )
+          ) && (
+            <div className="d-flex align-items-center mt-1" style={{ fontSize: "0.95rem" }}>
+          <span className="text-success fw-semibold">Online</span>
+        </div>
+          )}
       </div>
 
       {/* Messages */}
@@ -187,10 +209,11 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             {messages.map((msg) => (
               <ListGroup.Item
                 key={msg._id}
-                className={`mb-2 rounded shadow-sm px-3 py-2 ${msg.sender._id === userId
-                  ? "bg-primary text-white ms-auto"
-                  : "bg-light me-auto"
-                  }`}
+                className={`mb-2 rounded shadow-sm px-3 py-2 ${
+                  msg.sender._id === userId
+                    ? "bg-primary text-white ms-auto"
+                    : "bg-light me-auto"
+                }`}
                 style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
               >
                 <div className="small fw-bold">
@@ -198,31 +221,40 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                 </div>
                 <div>{msg.content}</div>
 
-                <div className="d-flex justify-content-end align-items-center mt-2" style={{ fontSize: "0.75rem" }}>
-  <div className="d-flex align-items-center gap-1">
-    <span className="text-dark">
-      {new Date(msg.createdAt).toLocaleTimeString([], {
-        hour: '2-digit',
-        minute: '2-digit',
-      })}
-    </span>
-    {msg.sender._id === userId && (
-      <span className="text-light">
-        {msg.isRead ? <CheckAll size={14} /> : <Check size={14} />}
-      </span>
-    )}
-  </div>
-</div>
-
-
+                <div
+                  className="d-flex flex-row justify-content-end align-items-center mt-2"
+                  style={{ fontSize: "0.75rem" }}
+                >
+                  <div
+                    className="d-flex flex-row align-items-center gap-0"
+                    style={{ width: "20%", gap: "2px" }}
+                  >
+                    <span className="text-dark" style={{ textAlign: "right" }}>
+                      {new Date(msg.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                    {msg.sender._id === userId && (
+                      <span
+                        className="text-light"
+                        style={{ textAlign: "right" }}
+                      >
+                        {msg.isRead ? (
+                          <CheckAll size={14} />
+                        ) : (
+                          <Check size={14} />
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </ListGroup.Item>
             ))}
             <div ref={messagesEndRef} />
           </ListGroup>
         )}
       </div>
-
-      
 
       {/* Input */}
       <Form

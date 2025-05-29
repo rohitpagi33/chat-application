@@ -84,6 +84,26 @@ io.on('connection', (socket) => {
     console.log(`Socket ${socket.id} joined chat room ${chatId}`);
   });
 
+  // Example: Add this to your socket.io server setup
+const onlineUsers = new Map();
+
+io.on("connection", (socket) => {
+  socket.on("user-online", (userId) => {
+    onlineUsers.set(userId, socket.id);
+    io.emit("update-online-users", Array.from(onlineUsers.keys()));
+  });
+
+  socket.on("disconnect", () => {
+    for (const [userId, id] of onlineUsers.entries()) {
+      if (id === socket.id) {
+        onlineUsers.delete(userId);
+        break;
+      }
+    }
+    io.emit("update-online-users", Array.from(onlineUsers.keys()));
+  });
+});
+
   socket.on('disconnect', () => {
     console.log('🔴 Client disconnected:', socket.id);
   });
