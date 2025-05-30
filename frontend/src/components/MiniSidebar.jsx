@@ -2,34 +2,47 @@ import React, { useState } from "react";
 import { FaCog, FaUsers } from "react-icons/fa";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import GroupChatModal from "./GroupChatModal";
+import axios from "axios";
 
 const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
   const [showGroupModal, setShowGroupModal] = useState(false);
 
   const buttons = [
     { icon: <FaCog size={20} />, action: onOpenSettings, tooltip: "Settings" },
-    { icon: <FaUsers size={20} />, action: () => setShowGroupModal(true), tooltip: "New Group Chat" },
+    {
+      icon: <FaUsers size={20} />,
+      action: () => setShowGroupModal(true),
+      tooltip: "New Group Chat",
+    },
   ];
 
-  const handleCreateGroup = ({ groupName, users }) => {
-    // Prepare the payload for backend
-    // Include current logged-in user ID too if necessary
-    // Example:
-    const userIds = users.map(u => u._id);
-    // Then call your API to create group chat
-    fetch("/api/chats/group", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chatName: groupName, users: userIds, isGroupChat: true }),
-    })
-      .then(res => res.json())
-      .then(data => {
-        onGroupCreated(data); // Notify parent about new group chat created
-      })
-      .catch(err => {
-        console.error(err);
-        alert("Failed to create group chat");
-      });
+  const handleCreateGroup = async ({ groupName, users }) => {
+    try {
+      const user = JSON.parse(localStorage.getItem("user"));
+      const currentUserId = user._id;
+      if (!currentUserId) {
+        alert("User not logged in");
+        return;
+      }
+
+      const userIds = users.map((u) => u._id);
+      if (!userIds.includes(currentUserId)) {
+        userIds.push(currentUserId); // add current user to group if not already included
+      }
+
+      const response = await axios.post(
+        "http://localhost:5000/api/chat/group",
+        {
+          chatName: groupName,
+          users: userIds,
+          isGroupChat: true,
+        }
+      );
+      alert(" created group chat successfully");
+    } catch (error) {
+      console.error("Group creation failed:", error);
+      alert("Failed to create group chat");
+    }
   };
 
   return (

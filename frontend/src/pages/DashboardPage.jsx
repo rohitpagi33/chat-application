@@ -62,6 +62,7 @@ const DashboardPage = () => {
           <MiniSidebar
             onOpenSettings={handleOpenSettings}
             onCreateGroup={handleCreateGroup}
+            
           />
         </div>
 
