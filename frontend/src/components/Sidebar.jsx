@@ -28,25 +28,45 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
             >
               <div className="ms-2 me-auto">
                 <div className="d-flex">
-                  <div className="fw-bold" style={{width: "60%"}}>{chatTitle}{" "}</div>
+                  <div className="fw-bold" style={{ width: "60%" }}>
+                    {chatTitle}{" "}
+                  </div>
                   {chat.latestMessage?.createdAt && (
-                    <div className="ms-3" style={{ fontSize: "0.8em", color: "black", textAlign: "right", width: "40%" }}>
-                      {new Date(
-                        chat.latestMessage.createdAt
-                      ).toLocaleTimeString([], {
+                    <div
+                      className="ms-3"
+                      style={{
+                        fontSize: "0.8em",
+                        color: "black",
+                        textAlign: "right",
+                        width: "40%",
+                      }}
+                    >
+                      {new Date(chat.latestMessage.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
                       })}
                     </div>
                   )}
                 </div>
-                <small
+                <div className="d-flex">
+                  <div className="" style={{ width: "70%" }}>
+                    <small
                   className="text-muted text-truncate d-block"
-                  style={{ maxWidth: "200px" }}
-                >
+                  style={{ maxWidth: "200px" }}>
                   {latestMessage}
                 </small>
+                  </div> 
+                  <div className="" style={{ width: "30%", textAlign: "right" }}>
+                    {/* Unread badge */}
+              {chat.unreadCount >= 0 && (
+                <div bg="primary" pill className="align-self-center ms-2">
+                  {chat.unreadCount}
+                </div>
+              )}
+                  </div>
+                </div>
               </div>
+              
             </ListGroup.Item>
           );
         })}
