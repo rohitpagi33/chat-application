@@ -13,7 +13,8 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
           const chatTitle = chat.isGroupChat
             ? chat.chatName
             : otherUser?.fullName || otherUser?.username;
-          const latestMessage = chat.latestMessage?.content || "No messages yet";
+          const latestMessage =
+            chat.latestMessage?.content || "No messages yet";
 
           return (
             <ListGroup.Item
@@ -23,16 +24,29 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
               active={selectedChat?._id === chat._id}
               onClick={() => onSelectChat(chat)}
               className="d-flex justify-content-between align-items-start"
-              style={{ cursor: "pointer"}}
+              style={{ cursor: "pointer" }}
             >
               <div className="ms-2 me-auto">
-                <div className="fw-bold">{chatTitle}</div>
-                <small className="text-muted text-truncate d-block" style={{ maxWidth: "200px" }}>
+                <div className="d-flex">
+                  <div className="fw-bold" style={{width: "60%"}}>{chatTitle}{" "}</div>
+                  {chat.latestMessage?.createdAt && (
+                    <div className="ms-3" style={{ fontSize: "0.8em", color: "black", textAlign: "right", width: "40%" }}>
+                      {new Date(
+                        chat.latestMessage.createdAt
+                      ).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </div>
+                  )}
+                </div>
+                <small
+                  className="text-muted text-truncate d-block"
+                  style={{ maxWidth: "200px" }}
+                >
                   {latestMessage}
                 </small>
               </div>
-              {/* Future feature: unread count badge */}
-              {/* <Badge bg="primary" pill>3</Badge> */}
             </ListGroup.Item>
           );
         })}

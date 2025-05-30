@@ -39,7 +39,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
   useEffect(() => {
     if (chat?._id) {
-
       socket.emit("user-online", userId);
       fetchMessages(chat._id);
       socket.emit("join-chat", chat._id);
@@ -47,7 +46,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
       socket.on("update-online-users", (users) => {
         setOnlineUsers(users);
-        console.log("Online users updated:", users);
       });
 
       socket.on("receive-message", (msg) => {
@@ -149,6 +147,40 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     }
   };
 
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffTime = nowOnly - dateOnly;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) {
+      // Show weekday name
+      return date.toLocaleDateString(undefined, { weekday: "long" });
+    }
+
+    if (date.getFullYear() === now.getFullYear()) {
+      return date.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "long",
+      });
+    }
+    return date.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
   if (!chat) {
     return (
       <div className="d-flex flex-column h-100 justify-content-center align-items-center text-center p-4">
@@ -189,16 +221,23 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
               chat.users.find((u) => String(u._id) !== String(userId))?._id
             )
           ) && (
-            <div className="d-flex align-items-center mt-1" style={{ fontSize: "0.95rem" }}>
-          <span className="text-success fw-semibold">Online</span>
-        </div>
+            <div
+              className="d-flex align-items-center mt-1"
+              style={{ fontSize: "0.95rem" }}
+            >
+              <span className="text-success fw-semibold">Online</span>
+            </div>
           )}
       </div>
 
       {/* Messages */}
       <div
-        className="flex-grow-1 overflow-auto p-3"
-        style={{ backgroundColor: "#f0f2f5" }}
+        className="flex-grow-1 overflow-auto px-3"
+        style={{
+          backgroundColor: "#f0f2f5",
+          scrollbarWidth: "none",
+          paddingBottom: "1rem",
+        }}
       >
         {loadingMessages ? (
           <div className="d-flex justify-content-center align-items-center h-100">
@@ -206,51 +245,82 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           </div>
         ) : (
           <ListGroup variant="flush">
-            {messages.map((msg) => (
-              <ListGroup.Item
-                key={msg._id}
-                className={`mb-2 rounded shadow-sm px-3 py-2 ${
-                  msg.sender._id === userId
-                    ? "bg-primary text-white ms-auto"
-                    : "bg-light me-auto"
-                }`}
-                style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
-              >
-                <div className="small fw-bold">
-                  {msg.sender.fullName || msg.sender.username}
-                </div>
-                <div>{msg.content}</div>
+            {messages.map((msg, idx) => {
+              const prevMsg = messages[idx - 1];
+              const showDate =
+                !prevMsg ||
+                new Date(prevMsg.createdAt).toDateString() !==
+                  new Date(msg.createdAt).toDateString();
 
-                <div
-                  className="d-flex flex-row justify-content-end align-items-center mt-2"
-                  style={{ fontSize: "0.75rem" }}
-                >
-                  <div
-                    className="d-flex flex-row align-items-center gap-0"
-                    style={{ width: "20%", gap: "2px" }}
-                  >
-                    <span className="text-dark" style={{ textAlign: "right" }}>
-                      {new Date(msg.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                    {msg.sender._id === userId && (
+              return (
+                <React.Fragment key={msg._id}>
+                  {showDate && (
+                    <div
+                      className="mx-auto text-center text-muted sticky-top mb-2 p-2"
+                      style={{
+                        minWidth: "200px",
+                        backgroundColor: "rgb(240, 242, 245)",
+                      }}
+                    >
                       <span
-                        className="text-light"
-                        style={{ textAlign: "right" }}
+                        className="mx-auto p-2 mb-2"
+                        style={{
+                          fontSize: "0.85rem",
+                          borderRadius: "8px",
+                          backgroundColor: "rgb(210, 216, 223)",
+                        }}
                       >
-                        {msg.isRead ? (
-                          <CheckAll size={14} />
-                        ) : (
-                          <Check size={14} />
-                        )}
+                        {formatDate(msg.createdAt)}
                       </span>
-                    )}
-                  </div>
-                </div>
-              </ListGroup.Item>
-            ))}
+                    </div>
+                  )}
+                  <ListGroup.Item
+                    className={`mb-2 rounded shadow-sm px-3 py-2 ${
+                      msg.sender._id === userId
+                        ? "bg-primary text-white ms-auto"
+                        : "bg-light me-auto"
+                    }`}
+                    style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
+                  >
+                    <div className="small fw-bold">
+                      {msg.sender.fullName || msg.sender.username}
+                    </div>
+                    <div>{msg.content}</div>
+                    <div
+                      className="d-flex flex-row justify-content-end align-items-center mt-2"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      <div
+                        className="d-flex flex-row align-items-center gap-0"
+                        style={{ width: "20%", gap: "2px" }}
+                      >
+                        <span
+                          className="text-dark"
+                          style={{ textAlign: "right" }}
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        {msg.sender._id === userId && (
+                          <span
+                            className="text-light"
+                            style={{ textAlign: "right" }}
+                          >
+                            {msg.isRead ? (
+                              <CheckAll size={14} />
+                            ) : (
+                              <Check size={14} />
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </ListGroup.Item>
+                </React.Fragment>
+              );
+            })}
             <div ref={messagesEndRef} />
           </ListGroup>
         )}

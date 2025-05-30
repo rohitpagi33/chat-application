@@ -61,6 +61,10 @@ const fetchChat = async (req, res) => {
 
     const chats = await Chat.find({ users: { $in: [currentUserId] } })
       .populate("users", "fullName username")
+      .populate({
+    path: "latestMessage",
+    populate: { path: "sender", select: "fullName username" }
+  })
       .sort({ updatedAt: -1 })
       .limit(10);
 
