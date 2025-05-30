@@ -75,4 +75,36 @@ const fetchChat = async (req, res) => {
   }
 };
 
-module.exports = { createChat, fetchChat };
+
+const createGroupChat = async (req, res) => {
+  try {
+    const { chatName, users, isGroupChat } = req.body;
+
+    if (!chatName || !users || users.length === 0) {
+      return res.status(400).json({ message: "Please provide group name and users" });
+    }
+
+    // Include current logged-in user in the group
+    const allUsers = [...users, req.user._id];
+
+    const groupChat = new Chat({
+      chatName,
+      users: allUsers,
+      isGroupChat: isGroupChat || true,
+    });
+
+    await groupChat.save();
+
+    const fullGroupChat = await Chat.findById(groupChat._id)
+      .populate("users", "-password")
+      .populate("latestMessage");
+
+    res.status(201).json(fullGroupChat);
+  } catch (err) {
+    console.error("Create group chat error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+
+module.exports = { createChat, fetchChat , createGroupChat };
