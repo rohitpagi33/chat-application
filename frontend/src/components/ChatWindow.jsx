@@ -216,36 +216,50 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       {/* Header */}
       <div className="border-bottom p-3 bg-black shadow-sm sticky-top">
         <div className="ms-2 me-auto d-flex">
-        <div className="d-flex align-items-center" style={{ width: "auto" }}>
-          <PersonCircle
-            size={35}
-            className="me-2 text-secondary"
-            style={{ width: "auto" }}
-          ></PersonCircle>
-        </div>
-        <h5 className="m-0 text-truncate align-self-center">
-          {chat.isGroupChat ? (
-            <span
-              style={{ cursor: "pointer"}}
-              onClick={() => {
-                setProfileUserId(null);
-                setShowProfile(true);
-              }}
-            >
-              {chat.chatName}
-            </span>
-          ) : (
-            <span
-              style={{ cursor: "pointer", textDecoration: "underline" }}
-              onClick={() => {
-                setProfileUserId(otherUser?._id);
-                setShowProfile(true);
-              }}
-            >
-              {otherUser?.fullName}
-            </span>
-          )}
-        </h5>
+          <div className="d-flex align-items-center" style={{ width: "auto" }}>
+            {otherUser?.profilePhoto ? (
+              <img
+                src={otherUser.profilePhoto}
+                alt="Profile"
+                style={{
+                  width: 35,
+                  height: 35,
+                  borderRadius: "50%",
+                  objectFit: "cover",
+                  marginRight: 8,
+                }}
+              />
+            ) : (
+              <PersonCircle
+                size={35}
+                className="me-2 text-secondary"
+                style={{ width: "auto" }}
+              />
+            )}
+          </div>
+          <h5 className="m-0 text-truncate align-self-center">
+            {chat.isGroupChat ? (
+              <span
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setProfileUserId(null);
+                  setShowProfile(true);
+                }}
+              >
+                {chat.chatName}
+              </span>
+            ) : (
+              <span
+                style={{ cursor: "pointer", textDecoration: "underline" }}
+                onClick={() => {
+                  setProfileUserId(otherUser?._id);
+                  setShowProfile(true);
+                }}
+              >
+                {otherUser?.fullName}
+              </span>
+            )}
+          </h5>
         </div>
         {!chat.isGroupChat && onlineUsers.includes(String(otherUser?._id)) && (
           <div
@@ -333,11 +347,11 @@ const StartChatModal = ({
 
   useEffect(() => {
     // Auto-search after user stops typing for 400ms
-    if (!searchTerm.trim()){
+    if (!searchTerm.trim()) {
       onSearch("");
-    setSearchResults([]);
-    return;
-    } 
+      setSearchResults([]);
+      return;
+    }
 
     clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(() => {
@@ -348,10 +362,10 @@ const StartChatModal = ({
   }, [searchTerm]);
 
   const handleClose = () => {
-  setSearchTerm("");
-  setSearchResults([]);
-  onHide();
-};
+    setSearchTerm("");
+    setSearchResults([]);
+    onHide();
+  };
 
   return (
     <Modal show={show} onHide={handleClose} centered>

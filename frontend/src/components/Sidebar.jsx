@@ -4,10 +4,12 @@ import { PersonCircle } from "react-bootstrap-icons"; // <-- Add this line
 
 const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
   return (
-    <div className="flex-grow-1 overflow-auto"
-    style={{
-          scrollbarWidth: "none",
-        }}>
+    <div
+      className="flex-grow-1 overflow-auto"
+      style={{
+        scrollbarWidth: "none",
+      }}
+    >
       <ListGroup
         as="ol"
         className="h-100 rounded-0"
@@ -39,11 +41,25 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                   className="d-flex align-items-center"
                   style={{ width: "auto" }}
                 >
-                  <PersonCircle
-                    size={30}
-                    className="me-2  text-secondary"
-                    style={{ width: "auto" }}
-                  ></PersonCircle>
+                  {otherUser?.profilePhoto ? (
+                    <img
+                      src={otherUser.profilePhoto}
+                      alt="Profile"
+                      style={{
+                        width: 35,
+                        height: 35,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        marginRight: 8,
+                      }}
+                    />
+                  ) : (
+                    <PersonCircle
+                      size={35}
+                      className="me-2 text-secondary"
+                      style={{ width: "auto" }}
+                    />
+                  )}
                 </div>
                 <div>
                   <div className="d-flex align-items-center">

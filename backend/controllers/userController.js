@@ -26,13 +26,12 @@ const searchUsers = async (req, res) => {
   }
 };
 
-
 const updateUser = async (req, res) => {
   try {
-    const { fullName, email } = req.body;
+    const { fullName, email, profilePhoto } = req.body;
     const user = await User.findByIdAndUpdate(
       req.params.id,
-      { fullName, email },
+      { fullName, email, profilePhoto },
       { new: true }
     );
     res.json(user);

@@ -19,7 +19,7 @@ const createChat = async (req, res) => {
     const existingChat = await Chat.findOne({
       isGroupChat: false,
       users: { $size: 2, $all: [currentUserId, currentotherUserId] },
-    }).populate("users", "fullName username");
+    }).populate("users", "fullName username profilePhoto");
 
     if (existingChat) {
       return res.status(200).json(existingChat);
@@ -43,7 +43,7 @@ const createChat = async (req, res) => {
 
     // Populate before sending
     const fullChat = await newChat
-      .populate("users", "fullName username")
+      .populate("users", "fullName username profilePhoto")
       .execPopulate();
 
     return res.status(201).json(fullChat);
@@ -63,10 +63,10 @@ const fetchChat = async (req, res) => {
 
     // Fetch chats for the user
     const chats = await Chat.find({ users: { $in: [userObjectId] } })
-      .populate("users", "fullName username")
+      .populate("users", "fullName username profilePhoto")
       .populate({
         path: "latestMessage",
-        populate: { path: "sender", select: "fullName username" },
+        populate: { path: "sender", select: "fullName username profilePhoto" },
       })
       .sort({ updatedAt: -1 })
       .lean();
