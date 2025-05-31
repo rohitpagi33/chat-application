@@ -4,6 +4,7 @@ import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import MiniSidebar from "../components/MiniSidebar";
+import Settings from "../components/Settings"; // <-- Import Settings
 
 const DashboardPage = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -11,6 +12,7 @@ const DashboardPage = () => {
 
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
+  const [showSettings, setShowSettings] = useState(false); // <-- Add state
 
   // Fetch chats for the current user
   const fetchChats = async () => {
@@ -41,7 +43,11 @@ const DashboardPage = () => {
   };
 
   const handleOpenSettings = () => {
-    console.log("Open Settings Page");
+    setShowSettings(true); // <-- Show settings
+  };
+
+  const handleCloseSettings = () => {
+    setShowSettings(false); // <-- Hide settings
   };
 
   const handleCreateGroup = () => {
@@ -62,35 +68,39 @@ const DashboardPage = () => {
           <MiniSidebar
             onOpenSettings={handleOpenSettings}
             onCreateGroup={handleCreateGroup}
-            
           />
         </div>
 
-        {/* Main Chat Area */}
+        {/* Main Area */}
         <div className="d-flex flex-grow-1">
-          {/* Sidebar */}
-          <div
-            style={{
-              width: "300px",
-              borderRight: "1px solid #dee2e6",
-            }}
-          >
-            <Sidebar
-              chats={chats}
-              selectedChat={selectedChat}
-              onSelectChat={setSelectedChat}
-              userId={currentUserId}
-            />
-          </div>
-
-          {/* Chat Window */}
-          <div className="flex-grow-1">
-            <ChatWindow
-              chat={selectedChat}
-              userId={currentUserId}
-              onStartNewChat={handleStartNewChat}
-            />
-          </div>
+          {showSettings ? (
+            <Settings onBack={handleCloseSettings} />
+          ) : (
+            <>
+              {/* Sidebar */}
+              <div
+                style={{
+                  width: "300px",
+                  borderRight: "1px solid #dee2e6",
+                }}
+              >
+                <Sidebar
+                  chats={chats}
+                  selectedChat={selectedChat}
+                  onSelectChat={setSelectedChat}
+                  userId={currentUserId}
+                />
+              </div>
+              {/* Chat Window */}
+              <div className="flex-grow-1">
+                <ChatWindow
+                  chat={selectedChat}
+                  userId={currentUserId}
+                  onStartNewChat={handleStartNewChat}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </Container>

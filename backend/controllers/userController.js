@@ -1,3 +1,4 @@
+const { get } = require('mongoose');
 const User = require('../models/User');  // << This is required!
 
 const searchUsers = async (req, res) => {
@@ -25,6 +26,31 @@ const searchUsers = async (req, res) => {
   }
 };
 
+
+const updateUser = async (req, res) => {
+  try {
+    const { fullName, email } = req.body;
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { fullName, email },
+      { new: true }
+    );
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to update user' });
+  }
+};
+
+
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id, '-__v');
+    res.json(user);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user' });
+  }
+};
+
 module.exports = {
-  searchUsers,
+  searchUsers, updateUser, getUserById
 };
