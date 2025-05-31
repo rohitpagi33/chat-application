@@ -1,5 +1,6 @@
 const Chat = require("../models/Chat");
 const User = require("../models/User");
+const Message = require("../models/Message");
 const mongoose = require("mongoose");
 
 const createChat = async (req, res) => {
@@ -52,28 +53,60 @@ const createChat = async (req, res) => {
 
 const fetchChat = async (req, res) => {
   try {
-    //console.log("Request body:", req.body);
     const { currentUserId } = req.body;
-
     if (!currentUserId) {
       return res.status(400).json({ error: "currentUserId is required" });
     }
+    const userObjectId = new mongoose.Types.ObjectId(currentUserId);
 
-    const chats = await Chat.find({ users: { $in: [currentUserId] } })
+    // Fetch chats for the user
+    const chats = await Chat.find({ users: { $in: [userObjectId] } })
       .populate("users", "fullName username")
       .populate({
-    path: "latestMessage",
-    populate: { path: "sender", select: "fullName username" }
-  })
+        path: "latestMessage",
+        populate: { path: "sender", select: "fullName username" }
+      })
       .sort({ updatedAt: -1 })
-      .limit(10);
+      .lean();
 
-    return res.status(200).json(chats);
+    const chatIds = chats.map(chat => chat._id);
+
+    // Aggregate unread counts for each chat
+    const unreadCounts = await Message.aggregate([
+      {
+        $match: {
+          chat: { $in: chatIds },
+          isRead: false,
+          sender: { $ne: userObjectId }
+        }
+      },
+      {
+        $group: {
+          _id: "$chat",
+          unreadCount: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Map unread counts to chatId
+    const unreadMap = {};
+    unreadCounts.forEach(u => {
+      unreadMap[u._id.toString()] = u.unreadCount;
+    });
+
+    // Attach unreadCount to each chat
+    const chatsWithUnread = chats.map(chat => ({
+      ...chat,
+      unreadCount: unreadMap[chat._id.toString()] || 0
+    }));
+
+    return res.status(200).json(chatsWithUnread);
   } catch (error) {
     console.error("Error fetching recent chats:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
 // const createGroupChat = async (req, res) => {
