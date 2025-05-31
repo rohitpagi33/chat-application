@@ -1,17 +1,30 @@
-import React from 'react';
+// components/MessageList.js
+import React from "react";
+import { ListGroup, Spinner } from "react-bootstrap";
+import Message from "./Message";
 
-const MessageList = ({ messages, currentUser }) => {
+const MessageList = ({ messages, loading, userId, onContextMenu, messagesEndRef }) => {
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center h-100">
+        <Spinner animation="border" style={{ color: "#ff6600" }} />
+      </div>
+    );
+  }
+
   return (
-    <div className="message-list">
-      {messages.map((msg) => (
-        <div
+    <ListGroup variant="flush">
+      {messages.map((msg, idx) => (
+        <Message
           key={msg._id}
-          className={msg.sender === currentUser._id ? 'my-message' : 'their-message'}
-        >
-          <p>{msg.content}</p>
-        </div>
+          msg={msg}
+          userId={userId}
+          prevMsg={messages[idx - 1]}
+          onContextMenu={onContextMenu}
+        />
       ))}
-    </div>
+      <div ref={messagesEndRef} />
+    </ListGroup>
   );
 };
 
