@@ -111,12 +111,12 @@ const fetchChat = async (req, res) => {
 };
 
 const createGroupChat = async (req, res) => {
-  const { chatName, users, isGroupChat } = req.body;
+  const { chatName, users, isGroupChat, adminId } = req.body;
 
-  if (!chatName || !users || users.length < 1) {
+  if (!chatName || !users || users.length < 1 || !adminId) {
     return res
       .status(400)
-      .json({ message: "Please provide chatName and at least 2 users" });
+      .json({ message: "Please provide chatName, at least 2 users, and adminId" });
   }
 
   try {
@@ -124,6 +124,7 @@ const createGroupChat = async (req, res) => {
       chatName,
       users,
       isGroupChat: true,
+      admin: adminId, // <-- Set the admin here
     });
 
     await groupChat.save();
@@ -135,4 +136,32 @@ const createGroupChat = async (req, res) => {
   }
 };
 
-module.exports = { createChat, fetchChat, createGroupChat };
+const getChatById = async (req, res) => {
+  try {
+    const chat = await Chat.findById(req.params.id)
+      .populate("users", "fullName username _id")
+      .populate("admin", "fullName username _id")
+      .lean();
+
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    // If admin is not a separate field, assume first user is admin
+    let admin = chat.admin;
+    if (!admin && chat.users && chat.users.length > 0) {
+      admin = chat.users[0];
+    }
+
+    res.json({
+      users: chat.users,
+      admin,
+      chatName: chat.chatName,
+      createdAt: chat.createdAt,
+      isGroupChat: chat.isGroupChat,
+      _id: chat._id,
+    });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch chat" });
+  }
+};
+
+module.exports = { createChat, fetchChat, createGroupChat, getChatById };

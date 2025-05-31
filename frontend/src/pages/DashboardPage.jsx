@@ -13,6 +13,8 @@ const DashboardPage = () => {
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
   const [showSettings, setShowSettings] = useState(false); // <-- Add state
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileUserId, setProfileUserId] = useState(null);
 
   // Fetch chats for the current user
   const fetchChats = async () => {

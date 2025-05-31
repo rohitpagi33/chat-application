@@ -21,6 +21,7 @@ import {
 } from "react-bootstrap";
 import axios from "axios";
 import { io } from "socket.io-client";
+import UserProfileSidebar from "./UserProfileSidebar";
 
 const socket = io("http://localhost:5000");
 
@@ -36,6 +37,8 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
   // Add at the top with other useState
   const [onlineUsers, setOnlineUsers] = useState([]);
+  const [showProfile, setShowProfile] = useState(false);
+  const [profileUserId, setProfileUserId] = useState(null);
 
   useEffect(() => {
     if (chat?._id) {
@@ -211,9 +214,28 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       {/* Header */}
       <div className="border-bottom p-3 bg-black shadow-sm sticky-top">
         <h5 className="m-0 text-truncate">
-          {chat.isGroupChat
-            ? chat.chatName
-            : chat.users.find((u) => u._id !== userId)?.fullName}
+          {chat.isGroupChat ? (
+            <span
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => {
+                setProfileUserId(null); // No userId for group, triggers group info in sidebar
+                setShowProfile(true);
+              }}
+            >
+              {chat.chatName}
+            </span>
+          ) : (
+            <span
+              style={{ cursor: "pointer", textDecoration: "underline" }}
+              onClick={() => {
+                const otherUser = chat.users.find((u) => u._id !== userId);
+                setProfileUserId(otherUser?._id);
+                setShowProfile(true);
+              }}
+            >
+              {chat.users.find((u) => u._id !== userId)?.fullName}
+            </span>
+          )}
         </h5>
         {!chat.isGroupChat &&
           onlineUsers.includes(
@@ -366,6 +388,13 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           </div>
         </div>
       </Form>
+
+      <UserProfileSidebar
+        userId={profileUserId}
+        chat={chat} // <-- pass the chat object here!
+        show={showProfile}
+        onHide={() => setShowProfile(false)}
+      />
     </div>
   );
 };

@@ -4,7 +4,7 @@ import { ListGroup, Badge } from "react-bootstrap";
 const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
   return (
     <div className="flex-grow-1 overflow-auto">
-      <ListGroup as="ol" className="h-100">
+      <ListGroup as="ol" className="h-100 rounded-0" style={{ maxHeight: "100vh" }}>
         {chats.length === 0 && (
           <div className="p-3 text-center text-muted">No chats yet</div>
         )}

@@ -36,6 +36,7 @@ const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
           chatName: groupName,
           users: userIds,
           isGroupChat: true,
+          adminId: currentUserId,
         }
       );
       alert(" created group chat successfully");
