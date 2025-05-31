@@ -201,6 +201,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           setSearchTerm={setSearchTerm}
           onSearch={handleSearch}
           searchResults={searchResults}
+          setSearchResults={setSearchResults}
           onCreateChat={handleCreateChat}
           searching={searching}
         />
@@ -324,6 +325,7 @@ const StartChatModal = ({
   setSearchTerm,
   onSearch,
   searchResults,
+  setSearchResults,
   onCreateChat,
   searching,
 }) => {
@@ -331,7 +333,11 @@ const StartChatModal = ({
 
   useEffect(() => {
     // Auto-search after user stops typing for 400ms
-    if (!searchTerm.trim()) return;
+    if (!searchTerm.trim()){
+      onSearch("");
+    setSearchResults([]);
+    return;
+    } 
 
     clearTimeout(debounceTimeout.current);
     debounceTimeout.current = setTimeout(() => {
@@ -341,8 +347,14 @@ const StartChatModal = ({
     return () => clearTimeout(debounceTimeout.current);
   }, [searchTerm]);
 
+  const handleClose = () => {
+  setSearchTerm("");
+  setSearchResults([]);
+  onHide();
+};
+
   return (
-    <Modal show={show} onHide={onHide} centered>
+    <Modal show={show} onHide={handleClose} centered>
       <Modal.Header closeButton>
         <Modal.Title>Start New Chat</Modal.Title>
       </Modal.Header>

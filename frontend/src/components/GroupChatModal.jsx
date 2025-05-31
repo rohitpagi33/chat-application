@@ -66,7 +66,13 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
 
   return (
     <Modal show={show} onHide={onClose}>
-      <Modal.Header closeButton>
+      <Modal.Header closeButton onClick={() => {
+      setGroupName("");
+      setSelectedUsers([]);
+      setSearch("");
+      setSearchResults([]);
+      onClose();
+    }}>
         <Modal.Title>Create Group Chat</Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -116,7 +122,13 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
         </Form.Group>
       </Modal.Body>
       <Modal.Footer>
-        <Button variant="secondary" onClick={onClose}>
+        <Button variant="secondary" onClick={() => {
+      setGroupName("");
+      setSelectedUsers([]);
+      setSearch("");
+      setSearchResults([]);
+      onClose();
+    }}>
           Cancel
         </Button>
         <Button variant="primary" onClick={handleCreate}>
