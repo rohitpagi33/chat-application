@@ -40,6 +40,13 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [profileUserId, setProfileUserId] = useState(null);
 
+  const [contextMenu, setContextMenu] = useState({
+    visible: false,
+    x: 0,
+    y: 0,
+    msgId: null,
+  });
+
   useEffect(() => {
     if (chat?._id) {
       socket.emit("user-online", userId);
@@ -78,6 +85,14 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       socket.off("update-online-users");
     };
   }, [chat]);
+
+  useEffect(() => {
+    // Hide context menu on click anywhere
+    const hideMenu = () =>
+      setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
+    window.addEventListener("click", hideMenu);
+    return () => window.removeEventListener("click", hideMenu);
+  }, []);
 
   const fetchMessages = async (chatId) => {
     try {
@@ -147,6 +162,35 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     } catch (err) {
       //console.log(currentUserId, currentotherUserId);
       console.error("Create chat failed", err.response?.data || err);
+    }
+  };
+
+
+  const handleDeleteMessage = async (msgId) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/messages/${msgId}`, {
+        data: { userId },
+      });
+      setMessages((prev) => prev.filter((m) => m._id !== msgId));
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete message");
+    }
+  };
+
+  const handleContextMenu = (e, msg) => {
+    e.preventDefault();
+    const canDelete =
+      msg.sender._id === userId &&
+      (new Date() - new Date(msg.createdAt)) < 2 * 60 * 1000;
+    if (canDelete) {
+      setContextMenu({
+        visible: true,
+        x: e.clientX,
+        y: e.clientY,
+        msgId: msg._id,
+      });
+    } else {
+      setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
     }
   };
 
@@ -274,6 +318,11 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                 new Date(prevMsg.createdAt).toDateString() !==
                   new Date(msg.createdAt).toDateString();
 
+                  const canDelete =
+                msg.sender._id === userId &&
+                (new Date() - new Date(msg.createdAt)) < 2 * 60 * 1000;
+
+
               return (
                 <React.Fragment key={msg._id}>
                   {showDate && (
@@ -303,6 +352,12 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                         : "bg-light me-auto"
                     }`}
                     style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
+                    onContextMenu={(e) => handleContextMenu(e, msg)}
+                    title={
+                      canDelete
+                        ? "Right-click to delete (within 2 minutes)"
+                        : undefined
+                    }
                   >
                     <div className="small fw-bold">
                       {msg.sender.fullName || msg.sender.username}
@@ -345,6 +400,38 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             })}
             <div ref={messagesEndRef} />
           </ListGroup>
+        )}
+        {/* Custom context menu */}
+        {contextMenu.visible && (
+          <div
+            style={{
+              position: "fixed",
+              top: contextMenu.y,
+              left: contextMenu.x,
+              background: "#fff",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+              zIndex: 9999,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
+              width: "auto",
+              padding: "4px 0",
+            }}
+          >
+            <div
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+                color: "red",
+                fontWeight: 500,
+              }}
+              onClick={() => {
+                handleDeleteMessage(contextMenu.msgId);
+                setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
+              }}
+            >
+              Delete
+            </div>
+          </div>
         )}
       </div>
 
