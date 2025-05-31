@@ -97,3 +97,11 @@ button:hover {
   background-color: #574fff;
   color: white;
 }
+
+.epr-emoji-scroll-wrapper::-webkit-scrollbar {
+  display: none !important;
+}
+.epr-emoji-scroll-wrapper {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}

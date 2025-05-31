@@ -22,7 +22,7 @@ import {
 import axios from "axios";
 import { io } from "socket.io-client";
 import UserProfileSidebar from "./UserProfileSidebar";
-
+import EmojiPicker from "emoji-picker-react";
 const socket = io("http://localhost:5000");
 
 const ChatWindow = ({ chat, userId, onStartNewChat }) => {
@@ -35,10 +35,10 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [searching, setSearching] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Add at the top with other useState
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [profileUserId, setProfileUserId] = useState(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -120,6 +120,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
     socket.emit("send-message", data);
     setNewMsg(""); // Clear input
+    setShowEmojiPicker(false);
     scrollToBottom();
   };
 
@@ -160,11 +161,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       setSearchTerm("");
       setSearchResults([]);
     } catch (err) {
-      //console.log(currentUserId, currentotherUserId);
       console.error("Create chat failed", err.response?.data || err);
     }
   };
-
 
   const handleDeleteMessage = async (msgId) => {
     try {
@@ -181,7 +180,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     e.preventDefault();
     const canDelete =
       msg.sender._id === userId &&
-      (new Date() - new Date(msg.createdAt)) < 2 * 60 * 1000;
+      new Date() - new Date(msg.createdAt) < 2 * 60 * 1000;
     if (canDelete) {
       setContextMenu({
         visible: true,
@@ -192,6 +191,11 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     } else {
       setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
     }
+  };
+
+  const handleEmojiClick = (emojiData) => {
+    setNewMsg((prev) => prev + emojiData.emoji);
+    setShowEmojiPicker(false);
   };
 
   const formatDate = (dateStr) => {
@@ -262,7 +266,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             <span
               style={{ cursor: "pointer", textDecoration: "underline" }}
               onClick={() => {
-                setProfileUserId(null); // No userId for group, triggers group info in sidebar
+                setProfileUserId(null);
                 setShowProfile(true);
               }}
             >
@@ -318,10 +322,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                 new Date(prevMsg.createdAt).toDateString() !==
                   new Date(msg.createdAt).toDateString();
 
-                  const canDelete =
+              const canDelete =
                 msg.sender._id === userId &&
-                (new Date() - new Date(msg.createdAt)) < 2 * 60 * 1000;
-
+                new Date() - new Date(msg.createdAt) < 2 * 60 * 1000;
 
               return (
                 <React.Fragment key={msg._id}>
@@ -443,7 +446,10 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
         }}
         className="p-3 border-0 bg-transparent"
       >
-        <div className="chat-input rounded-3 shadow-sm d-flex w-100 align-items-center">
+        <div
+          className="chat-input rounded-3 shadow-sm d-flex w-100 align-items-center"
+          style={{ position: "relative" }}
+        >
           {/* Message Input (70%) */}
           <div className="input-wrapper me-2">
             <FormControl
@@ -461,9 +467,30 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
               <Paperclip size={20} />
             </Button>
 
-            <Button variant="link" className="icon-btn p-0" type="button">
-              <EmojiSmile size={20} />
-            </Button>
+            <div style={{ position: "relative" }}>
+              <Button
+                variant="link"
+                className="icon-btn p-0"
+                type="button"
+                onClick={() => setShowEmojiPicker((v) => !v)}
+              >
+                <EmojiSmile size={18} />
+              </Button>
+              {showEmojiPicker && (
+                <div
+                  style={{
+                    position: "absolute",
+                    scrollbarWidth: "none",
+                    bottom: "40px",
+                    right: 0,
+                    zIndex: 1000,
+                    msOverflowStyle: "none",
+                  }}
+                >
+                  <EmojiPicker onEmojiClick={handleEmojiClick} />
+                </div>
+              )}
+            </div>
 
             <Button
               variant="link"
@@ -478,7 +505,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
       <UserProfileSidebar
         userId={profileUserId}
-        chat={chat} // <-- pass the chat object here!
+        chat={chat}
         show={showProfile}
         onHide={() => setShowProfile(false)}
       />
