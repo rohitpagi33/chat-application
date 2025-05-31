@@ -51,22 +51,21 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                 <div className="d-flex">
                   <div className="" style={{ width: "70%" }}>
                     <small
-                  className="text-muted text-truncate d-block"
-                  style={{ maxWidth: "200px" }}>
-                  {latestMessage}
-                </small>
-                  </div> 
+                      className="text-muted text-truncate d-block"
+                      style={{ maxWidth: "200px" }}>
+                      {latestMessage}
+                    </small>
+                  </div>
                   <div className="" style={{ width: "30%", textAlign: "right" }}>
                     {/* Unread badge */}
-              {chat.unreadCount >= 0 && (
-                <div bg="primary" pill className="align-self-center ms-2">
-                  {chat.unreadCount}
-                </div>
-              )}
+                    {chat.unreadCount > 0 && (
+                      <Badge bg="primary" pill className="align-self-center ms-2">
+                        {chat.unreadCount}
+                      </Badge>
+                    )}
                   </div>
                 </div>
               </div>
-              
             </ListGroup.Item>
           );
         })}

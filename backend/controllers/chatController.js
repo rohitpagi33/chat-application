@@ -42,7 +42,9 @@ const createChat = async (req, res) => {
     await newChat.save();
 
     // Populate before sending
-    const fullChat = await newChat.populate("users", "fullName username").execPopulate();
+    const fullChat = await newChat
+      .populate("users", "fullName username")
+      .execPopulate();
 
     return res.status(201).json(fullChat);
   } catch (err) {
@@ -64,12 +66,12 @@ const fetchChat = async (req, res) => {
       .populate("users", "fullName username")
       .populate({
         path: "latestMessage",
-        populate: { path: "sender", select: "fullName username" }
+        populate: { path: "sender", select: "fullName username" },
       })
       .sort({ updatedAt: -1 })
       .lean();
 
-    const chatIds = chats.map(chat => chat._id);
+    const chatIds = chats.map((chat) => chat._id);
 
     // Aggregate unread counts for each chat
     const unreadCounts = await Message.aggregate([
@@ -77,27 +79,28 @@ const fetchChat = async (req, res) => {
         $match: {
           chat: { $in: chatIds },
           isRead: false,
-          sender: { $ne: userObjectId }
-        }
+          sender: { $ne: userObjectId },
+          readBy: { $ne: userObjectId },
+        },
       },
       {
         $group: {
           _id: "$chat",
-          unreadCount: { $sum: 1 }
-        }
-      }
+          unreadCount: { $sum: 1 },
+        },
+      },
     ]);
 
     // Map unread counts to chatId
     const unreadMap = {};
-    unreadCounts.forEach(u => {
+    unreadCounts.forEach((u) => {
       unreadMap[u._id.toString()] = u.unreadCount;
     });
 
     // Attach unreadCount to each chat
-    const chatsWithUnread = chats.map(chat => ({
+    const chatsWithUnread = chats.map((chat) => ({
       ...chat,
-      unreadCount: unreadMap[chat._id.toString()] || 0
+      unreadCount: unreadMap[chat._id.toString()] || 0,
     }));
 
     return res.status(200).json(chatsWithUnread);
@@ -107,59 +110,29 @@ const fetchChat = async (req, res) => {
   }
 };
 
-
-
-// const createGroupChat = async (req, res) => {
-//   try {
-//     const { chatName, users, isGroupChat } = req.body;
-
-//     if (!chatName || !users || users.length === 0) {
-//       return res.status(400).json({ message: "Please provide group name and users" });
-//     }
-
-//     // Include current logged-in user in the group
-//     const allUsers = [...users, req.user._id];
-
-//     const groupChat = new Chat({
-//       chatName,
-//       users: allUsers,
-//       isGroupChat: isGroupChat || true,
-//     });
-
-//     await groupChat.save();
-
-//     const fullGroupChat = await Chat.findById(groupChat._id)
-//       .populate("users", "-password")
-//       .populate("latestMessage");
-
-//     res.status(201).json(fullGroupChat);
-//   } catch (err) {
-//     console.error("Create group chat error:", err);
-//     res.status(500).json({ message: "Server error" });
-//   }
-// };
-
 const createGroupChat = async (req, res) => {
   const { chatName, users, isGroupChat } = req.body;
 
   if (!chatName || !users || users.length < 1) {
-    return res.status(400).json({ message: "Please provide chatName and at least 2 users" });
+    return res
+      .status(400)
+      .json({ message: "Please provide chatName and at least 2 users" });
   }
 
   try {
     const groupChat = new Chat({
       chatName,
       users,
-      isGroupChat: true
+      isGroupChat: true,
     });
 
     await groupChat.save();
 
-    res.status(201).json({ success: true, groupChat});
+    res.status(201).json({ success: true, groupChat });
   } catch (err) {
     console.error("Error creating group chat:", err);
     res.status(500).json({ message: "Server error while creating group chat" });
   }
 };
 
-module.exports = { createChat, fetchChat , createGroupChat };
+module.exports = { createChat, fetchChat, createGroupChat };
