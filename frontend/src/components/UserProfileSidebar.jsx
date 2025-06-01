@@ -63,6 +63,16 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
     }
   }, [show]);
 
+  // Sort members: admin first, then others alphabetically
+  const sortedMembers = [
+    ...(admin ? groupUsers.filter((u) => u._id === admin._id) : []),
+    ...groupUsers
+      .filter((u) => !admin || u._id !== admin._id)
+      .sort((a, b) =>
+        (a.fullName || a.username).localeCompare(b.fullName || b.username)
+      ),
+  ];
+
   return (
     <Offcanvas show={show} onHide={onHide} placement="end">
       <Offcanvas.Header closeButton>
@@ -96,26 +106,41 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
                 <Spinner animation="border" />
               ) : memberProfile ? (
                 <>
-                  <div
-                    className="mx-auto mb-3"
-                    style={{
-                      width: 80,
-                      height: 80,
-                      borderRadius: "50%",
-                      background: "#e0e0e0",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      fontSize: 36,
-                      color: "#888",
-                    }}
-                  >
-                    <span>
-                      {memberProfile.fullName
-                        ? memberProfile.fullName[0].toUpperCase()
-                        : memberProfile.username[0].toUpperCase()}
-                    </span>
-                  </div>
+                  {memberProfile.profilePhoto ? (
+                    <img
+                      src={memberProfile.profilePhoto}
+                      alt="Profile"
+                      className="mx-auto mb-3"
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        display: "block",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      className="mx-auto mb-3"
+                      style={{
+                        width: 80,
+                        height: 80,
+                        borderRadius: "50%",
+                        background: "#e0e0e0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: 36,
+                        color: "#888",
+                      }}
+                    >
+                      <span>
+                        {memberProfile.fullName
+                          ? memberProfile.fullName[0].toUpperCase()
+                          : memberProfile.username[0].toUpperCase()}
+                      </span>
+                    </div>
+                  )}
                   <h5>{memberProfile.fullName}</h5>
                   <div className="mb-2 text-muted">
                     @{memberProfile.username}
@@ -139,24 +164,41 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
             </div>
           ) : (
             <div>
-              <div
-                className="mx-auto mb-3"
-                style={{
-                  width: 80,
-                  height: 80,
-                  borderRadius: "50%",
-                  background: "#e0e0e0",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: 36,
-                  color: "#888",
-                }}
-              >
-                <span>
-                  {chat.chatName ? chat.chatName[0].toUpperCase() : "G"}
-                </span>
-              </div>
+              {chat.groupPhoto ? (
+                <img
+                  src={chat.groupPhoto}
+                  alt="Group"
+                  className="mx-auto mb-3"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    objectFit: "cover",
+                    border: "2px solid #e0e0e0",
+                    background: "#fff",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  className="mx-auto mb-3"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    background: "#e0e0e0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 36,
+                    color: "#888",
+                  }}
+                >
+                  <span>
+                    {chat.chatName ? chat.chatName[0].toUpperCase() : "G"}
+                  </span>
+                </div>
+              )}
               <h5 className="text-center">{chat.chatName}</h5>
               <div className="mb-2 text-center">
                 <Badge bg="secondary">
@@ -179,22 +221,64 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
               <div>
                 <strong>Members:</strong>
                 <ListGroup className="mt-2">
-                  {groupUsers.map((member) => (
+                  {sortedMembers.map((member) => (
                     <ListGroup.Item
                       key={member._id}
                       action
-                      style={{ cursor: "pointer" }}
+                      style={{
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 12,
+                        padding: "8px 12px",
+                      }}
                       onClick={() => {
                         setSelectedMember(member);
                         fetchMemberProfile(member._id);
                       }}
                     >
-                      {member.fullName || member.username}
-                      {admin && admin._id === member._id && (
-                        <Badge bg="info" className="ms-2">
-                          Admin
-                        </Badge>
+                      {member.profilePhoto ? (
+                        <img
+                          src={member.profilePhoto}
+                          alt="Profile"
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: "1.5px solid #e0e0e0",
+                            background: "#fff",
+                            marginRight: 8,
+                          }}
+                        />
+                      ) : (
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: "50%",
+                            background: "#e0e0e0",
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            fontSize: 18,
+                            color: "#888",
+                            marginRight: 8,
+                          }}
+                        >
+                          <span>
+                            {(member.fullName || member.username)[0].toUpperCase()}
+                          </span>
+                        </div>
                       )}
+                      <span style={{ flex: 1 }}>
+                        {member.fullName || member.username}
+                        {admin && admin._id === member._id && (
+                          <Badge bg="info" className="ms-2">
+                            Admin
+                          </Badge>
+                        )}
+                      </span>
                     </ListGroup.Item>
                   ))}
                 </ListGroup>

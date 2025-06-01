@@ -140,8 +140,8 @@ const createGroupChat = async (req, res) => {
 const getChatById = async (req, res) => {
   try {
     const chat = await Chat.findById(req.params.id)
-      .populate("users", "fullName username _id")
-      .populate("admin", "fullName username _id")
+      .populate("users", "fullName username _id profilePhoto") // <-- add profilePhoto
+      .populate("admin", "fullName username _id profilePhoto") // <-- add profilePhoto
       .lean();
 
     if (!chat) return res.status(404).json({ message: "Chat not found" });
