@@ -117,7 +117,9 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
                     </span>
                   </div>
                   <h5>{memberProfile.fullName}</h5>
-                  <div className="mb-2 text-muted">@{memberProfile.username}</div>
+                  <div className="mb-2 text-muted">
+                    @{memberProfile.username}
+                  </div>
                   <div className="mb-2">
                     <strong>Date Joined:</strong>{" "}
                     {memberProfile.createdAt
@@ -202,25 +204,39 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
         ) : user ? (
           <div className="text-center">
             {/* Placeholder avatar */}
-            <div
-              className="mx-auto mb-3"
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: "50%",
-                background: "#e0e0e0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 36,
-                color: "#888",
-              }}
-            >
-              <span>
-                {user.fullName
-                  ? user.fullName[0].toUpperCase()
-                  : user.username[0].toUpperCase()}
-              </span>
+            <div className="mx-auto mb-3" style={{ width: 80, height: 80 }}>
+              {user.profilePhoto ? (
+                <img
+                  src={user.profilePhoto}
+                  alt="Profile"
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    display: "block",
+                  }}
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 80,
+                    height: 80,
+                    borderRadius: "50%",
+                    background: "#e0e0e0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 36,
+                    color: "#888",
+                  }}
+                >
+                  <span>
+                    {user.fullName
+                      ? user.fullName[0].toUpperCase()
+                      : user.username[0].toUpperCase()}
+                  </span>
+                </div>
+              )}
             </div>
             <h5>{user.fullName}</h5>
             <div className="mb-2 text-muted">@{user.username}</div>

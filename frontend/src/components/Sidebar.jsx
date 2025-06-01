@@ -37,30 +37,45 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
               style={{ cursor: "pointer" }}
             >
               <div className="ms-2 me-auto d-flex">
-                <div
-                  className="d-flex align-items-center"
-                  style={{ width: "auto" }}
-                >
-                  {otherUser?.profilePhoto ? (
-                    <img
-                      src={otherUser.profilePhoto}
-                      alt="Profile"
-                      style={{
-                        width: 35,
-                        height: 35,
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        marginRight: 8,
-                      }}
-                    />
-                  ) : (
-                    <PersonCircle
-                      size={35}
-                      className="me-2 text-secondary"
-                      style={{ width: "auto" }}
-                    />
-                  )}
-                </div>
+                <div className="d-flex align-items-center" style={{ width: "auto" }}>
+  {chat.isGroupChat ? (
+    chat.groupPhoto ? (
+      <img
+        src={chat.groupPhoto}
+        alt="Group"
+        style={{
+          width: 35,
+          height: 35,
+          borderRadius: "50%",
+          marginRight: 8,
+        }}
+      />
+    ) : (
+      <PersonCircle
+        size={35}
+        className="me-2 text-secondary"
+        style={{ width: "auto" }}
+      />
+    )
+  ) : otherUser?.profilePhoto ? (
+    <img
+      src={otherUser.profilePhoto}
+      alt="Profile"
+      style={{
+        width: 35,
+        height: 35,
+        borderRadius: "50%",
+        marginRight: 8,
+      }}
+    />
+  ) : (
+    <PersonCircle
+      size={35}
+      className="me-2 text-secondary"
+      style={{ width: "auto" }}
+    />
+  )}
+</div>
                 <div>
                   <div className="d-flex align-items-center">
                     <div className="fw-bold" style={{ width: "60%" }}>

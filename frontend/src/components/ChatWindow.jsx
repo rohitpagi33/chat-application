@@ -217,7 +217,26 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       <div className="border-bottom p-3 bg-black shadow-sm sticky-top">
         <div className="ms-2 me-auto d-flex">
           <div className="d-flex align-items-center" style={{ width: "auto" }}>
-            {otherUser?.profilePhoto ? (
+            {chat.isGroupChat ? (
+              chat.groupPhoto ? (
+                <img
+                  src={chat.groupPhoto}
+                  alt="Group"
+                  style={{
+                    width: 35,
+                    height: 35,
+                    borderRadius: "50%",
+                    marginRight: 8,
+                  }}
+                />
+              ) : (
+                <PersonCircle
+                  size={35}
+                  className="me-2 text-secondary"
+                  style={{ width: "auto" }}
+                />
+              )
+            ) : otherUser?.profilePhoto ? (
               <img
                 src={otherUser.profilePhoto}
                 alt="Profile"
@@ -225,7 +244,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                   width: 35,
                   height: 35,
                   borderRadius: "50%",
-                  objectFit: "cover",
                   marginRight: 8,
                 }}
               />
@@ -250,7 +268,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
               </span>
             ) : (
               <span
-                style={{ cursor: "pointer", textDecoration: "underline" }}
+                style={{ cursor: "pointer" }}
                 onClick={() => {
                   setProfileUserId(otherUser?._id);
                   setShowProfile(true);

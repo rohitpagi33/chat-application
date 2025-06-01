@@ -44,17 +44,30 @@ const Settings = ({ onBack }) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
 
-  // --- Handle image upload to Supabase ---
   const handleImageChange = async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   setUploading(true);
   const fileExt = file.name.split('.').pop();
   const filePath = `${currentUserId}.${fileExt}`; // Only user ID
+
+  // Delete the old file if it exists
+  const { error: deleteError } = await supabase.storage
+    .from("avatars")
+    .remove([filePath]);
+  if (deleteError && deleteError.message !== "Object not found") {
+    console.log("Supabase delete error:", deleteError);
+    alert("Failed to delete old profile photo!");
+    setUploading(false);
+    return;
+  }
+
+  // Upload the new file (upsert is optional now)
   const { data, error } = await supabase.storage
     .from("avatars")
-    .upload(filePath, file, { upsert: true });
+    .upload(filePath, file);
   if (error) {
+    console.log("Supabase upload error:", error);
     alert("Upload failed!");
     setUploading(false);
     return;
