@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
+  Paperclip,
+  EmojiSmile,
+  At,
+  Send,
+  Check,
+  CheckAll,
+  FileEarmarkPdf,
+  FileEarmarkImage,
+  FileEarmark,
+} from "react-bootstrap-icons";
+import "../App.css";
+import {
   Button,
   Form,
   ListGroup,
@@ -7,13 +19,18 @@ import {
   InputGroup,
   FormControl,
   Spinner,
+  Row,
+  Col,
 } from "react-bootstrap";
-import { io } from "socket.io-client";
 import axios from "axios";
-import MessageList from "./MessageList";
-import MessageInput from "./MessageInput";
-import { PersonCircle } from "react-bootstrap-icons";
+import { io } from "socket.io-client";
 import UserProfileSidebar from "./UserProfileSidebar";
+import EmojiPicker from "emoji-picker-react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const socket = io("http://localhost:5000");
 
@@ -25,10 +42,13 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [searchResults, setSearchResults] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [searching, setSearching] = useState(false);
+  const messagesEndRef = useRef(null);
+
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showProfile, setShowProfile] = useState(false);
   const [profileUserId, setProfileUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+
   const [contextMenu, setContextMenu] = useState({
     visible: false,
     x: 0,
@@ -36,7 +56,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     msgId: null,
   });
 
-  const messagesEndRef = useRef(null);
+  // File upload state
+  const fileInputRef = useRef();
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     if (chat?._id) {
@@ -45,18 +67,22 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       socket.emit("join-chat", chat._id);
       socket.emit("mark-read", { chatId: chat._id, userId });
 
-      socket.on("update-online-users", (users) => setOnlineUsers(users));
+      socket.on("update-online-users", (users) => {
+        setOnlineUsers(users);
+      });
+
       socket.on("receive-message", (msg) => {
         if (msg.chat === chat._id) {
           setMessages((prev) => [...prev, msg]);
           scrollToBottom();
+
           if (msg.sender._id !== userId) {
             socket.emit("mark-read", { chatId: chat._id, userId });
           }
         }
       });
       socket.on("messages-read", ({ chatId, userId: readerId }) => {
-        if (chatId === chat._id && readerId !== userId) {
+        if (chatId === chat?._id && readerId !== userId) {
           setMessages((prev) =>
             prev.map((msg) =>
               msg.sender._id === userId ? { ...msg, isRead: true } : msg
@@ -74,6 +100,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   }, [chat]);
 
   useEffect(() => {
+    // Hide context menu on click anywhere
     const hideMenu = () =>
       setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
     window.addEventListener("click", hideMenu);
@@ -98,16 +125,56 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const sendMessage = () => {
     if (!newMsg.trim() || !chat?._id) return;
 
-    socket.emit("send-message", {
+    const data = {
       senderId: userId,
       chatId: chat._id,
       content: newMsg.trim(),
-    });
+    };
 
-    setNewMsg("");
+    socket.emit("send-message", data);
+    setNewMsg(""); // Clear input
     setShowEmojiPicker(false);
     scrollToBottom();
   };
+
+  // --- File upload logic ---
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file || !chat?._id) return;
+    setUploading(true);
+
+    const filePath = `${Date.now()}_${file.name}`;
+    const { data, error } = await supabase.storage
+      .from("avatars") // use avatars bucket
+      .upload(filePath, file);
+
+    if (error) {
+      alert("File upload failed!");
+      setUploading(false);
+      return;
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars") // use avatars bucket
+      .getPublicUrl(filePath);
+
+    setUploading(false);
+
+    // Send as a file message
+    socket.emit("send-message", {
+      senderId: userId,
+      chatId: chat._id,
+      content: "",
+      file: {
+        url: publicUrlData.publicUrl,
+        type: file.type,
+        name: file.name,
+      },
+      messageType: "file",
+    });
+    scrollToBottom();
+  };
+  // --- End file upload logic ---
 
   const scrollToBottom = () => {
     setTimeout(
@@ -166,7 +233,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     const canDelete =
       msg.sender._id === userId &&
       new Date() - new Date(msg.createdAt) < 2 * 60 * 1000;
-
     if (canDelete) {
       setContextMenu({
         visible: true,
@@ -184,6 +250,193 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     setShowEmojiPicker(false);
   };
 
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+
+    const dateOnly = new Date(
+      date.getFullYear(),
+      date.getMonth(),
+      date.getDate()
+    );
+    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const diffTime = nowOnly - dateOnly;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) {
+      // Show weekday name
+      return date.toLocaleDateString(undefined, { weekday: "long" });
+    }
+
+    if (date.getFullYear() === now.getFullYear()) {
+      return date.toLocaleDateString(undefined, {
+        day: "numeric",
+        month: "long",
+      });
+    }
+    return date.toLocaleDateString(undefined, {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  };
+
+  // Helper to render file preview
+  const renderFile = (file) => {
+    if (!file?.url) return null;
+    const ext = file.name?.split(".").pop().toLowerCase();
+
+    // Common style for file box
+    const fileBoxStyle = {
+      background: "#f8f9fa",
+      border: "1px solid #e0e0e0",
+      borderRadius: 8,
+      padding: "12px 16px",
+      marginBottom: 6,
+      display: "flex",
+      alignItems: "center",
+      gap: 12,
+      maxWidth: 320,
+      wordBreak: "break-all",
+    };
+
+    // File name style
+    const fileNameStyle = {
+      color: "#222",
+      fontWeight: 600,
+      fontSize: "1rem",
+      marginBottom: 2,
+      textDecoration: "none",
+    };
+
+    if (file.type?.startsWith("image/")) {
+      return (
+        <div style={fileBoxStyle}>
+          <a href={file.url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={file.url}
+              alt={file.name}
+              style={{
+                maxWidth: 80,
+                maxHeight: 80,
+                borderRadius: 6,
+                border: "1px solid #eee",
+                marginRight: 10,
+              }}
+            />
+          </a>
+          <div>
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={fileNameStyle}
+            >
+              {file.name}
+            </a>
+            <div>
+              <a
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-primary"
+                style={{ textDecoration: "underline" }}
+              >
+                View Image
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (ext === "pdf") {
+      return (
+        <div style={fileBoxStyle}>
+          <FileEarmarkPdf size={36} className="me-2 text-danger" />
+          <div>
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={fileNameStyle}
+            >
+              {file.name}
+            </a>
+            <div>
+              <a
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-primary"
+                style={{ textDecoration: "underline" }}
+              >
+                Open PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    if (["ppt", "pptx"].includes(ext)) {
+      return (
+        <div style={fileBoxStyle}>
+          <FileEarmark size={36} className="me-2 text-warning" />
+          <div>
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={fileNameStyle}
+            >
+              {file.name}
+            </a>
+            <div>
+              <a
+                href={file.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="small text-primary"
+                style={{ textDecoration: "underline" }}
+              >
+                Open Presentation
+              </a>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // Generic file
+    return (
+      <div style={fileBoxStyle}>
+        <FileEarmark size={36} className="me-2 text-secondary" />
+        <div>
+          <a
+            href={file.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={fileNameStyle}
+          >
+            {file.name}
+          </a>
+          <div>
+            <a
+              href={file.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="small text-primary"
+              style={{ textDecoration: "underline" }}
+            >
+              Open File
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   if (!chat) {
     return (
       <div className="d-flex flex-column h-100 justify-content-center align-items-center text-center p-4">
@@ -194,6 +447,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
         >
           Start New Chat
         </Button>
+
         <StartChatModal
           show={showStartChatModal}
           onHide={() => setShowStartChatModal(false)}
@@ -201,7 +455,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           setSearchTerm={setSearchTerm}
           onSearch={handleSearch}
           searchResults={searchResults}
-          setSearchResults={setSearchResults}
           onCreateChat={handleCreateChat}
           searching={searching}
         />
@@ -209,98 +462,236 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     );
   }
 
-  const otherUser = chat.users.find((u) => u._id !== userId);
-
   return (
     <div className="d-flex flex-column h-100">
       {/* Header */}
-      <div className="border-bottom p-3 bg-black shadow-sm sticky-top">
-        <div className="ms-2 me-auto d-flex">
-          <div className="d-flex align-items-center" style={{ width: "auto" }}>
-            {chat.isGroupChat ? (
-              chat.groupPhoto ? (
-                <img
-                  src={chat.groupPhoto}
-                  alt="Group"
-                  style={{
-                    width: 35,
-                    height: 35,
-                    borderRadius: "50%",
-                    marginRight: 8,
-                  }}
-                />
-              ) : (
-                <PersonCircle
-                  size={35}
-                  className="me-2 text-secondary"
-                  style={{ width: "auto" }}
-                />
-              )
-            ) : otherUser?.profilePhoto ? (
+      <div className="border-bottom p-3 bg-black shadow-sm sticky-top d-flex align-items-center gap-3">
+        {/* Avatar/Profile/Group Photo */}
+        {chat.isGroupChat ? (
+          chat.groupPhoto ? (
+            <img
+              src={chat.groupPhoto}
+              alt="Group"
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "2px solid #e0e0e0",
+                background: "#fff",
+              }}
+              className="me-2"
+            />
+          ) : (
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: "50%",
+                background: "#e0e0e0",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 20,
+                color: "#888",
+              }}
+              className="me-2"
+            >
+              <span>
+                {chat.chatName ? chat.chatName[0].toUpperCase() : "G"}
+              </span>
+            </div>
+          )
+        ) : (
+          (() => {
+            const otherUser = chat.users.find((u) => u._id !== userId);
+            return otherUser?.profilePhoto ? (
               <img
                 src={otherUser.profilePhoto}
-                alt="Profile"
+                alt="User"
                 style={{
-                  width: 35,
-                  height: 35,
+                  width: 40,
+                  height: 40,
                   borderRadius: "50%",
-                  marginRight: 8,
+                  objectFit: "cover",
+                  border: "2px solid #e0e0e0",
+                  background: "#fff",
                 }}
+                className="me-2"
               />
             ) : (
-              <PersonCircle
-                size={35}
-                className="me-2 text-secondary"
-                style={{ width: "auto" }}
-              />
-            )}
-          </div>
-          <h5 className="m-0 text-truncate align-self-center">
-            {chat.isGroupChat ? (
-              <span
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  setProfileUserId(null);
-                  setShowProfile(true);
+              <div
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: "50%",
+                  background: "#e0e0e0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 20,
+                  color: "#888",
                 }}
+                className="me-2"
               >
-                {chat.chatName}
-              </span>
-            ) : (
-              <span
-                style={{ cursor: "pointer" }}
-                onClick={() => {
-                  setProfileUserId(otherUser?._id);
-                  setShowProfile(true);
-                }}
-              >
-                {otherUser?.fullName}
-              </span>
-            )}
-          </h5>
-        </div>
-        {!chat.isGroupChat && onlineUsers.includes(String(otherUser?._id)) && (
-          <div
-            className="d-flex align-items-center mt-1"
-            style={{ fontSize: "0.95rem" }}
-          >
-            <span className="text-success fw-semibold">Online</span>
-          </div>
+                <span>
+                  {otherUser?.fullName
+                    ? otherUser.fullName[0].toUpperCase()
+                    : otherUser?.username
+                    ? otherUser.username[0].toUpperCase()
+                    : "U"}
+                </span>
+              </div>
+            );
+          })()
         )}
+
+        {/* Chat Name */}
+        <h5 className="m-0 text-truncate" style={{ flex: 1 }}>
+          {chat.isGroupChat ? (
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                setProfileUserId(null);
+                setShowProfile(true);
+              }}
+            >
+              {chat.chatName}
+            </span>
+          ) : (
+            <span
+              style={{ cursor: "pointer" }}
+              onClick={() => {
+                const otherUser = chat.users.find((u) => u._id !== userId);
+                setProfileUserId(otherUser?._id);
+                setShowProfile(true);
+              }}
+            >
+              {chat.users.find((u) => u._id !== userId)?.fullName}
+            </span>
+          )}
+        </h5>
+        {/* Online status for 1-to-1 */}
+        {!chat.isGroupChat &&
+          onlineUsers.includes(
+            String(
+              chat.users.find((u) => String(u._id) !== String(userId))?._id
+            )
+          ) && (
+            <span className="text-success fw-semibold ms-2" style={{ fontSize: "0.95rem" }}>
+              Online
+            </span>
+          )}
       </div>
 
       {/* Messages */}
       <div
         className="flex-grow-1 overflow-auto px-3"
-        style={{ backgroundColor: "#f0f2f5", paddingBottom: "1rem" }}
+        style={{
+          backgroundColor: "#f0f2f5",
+          scrollbarWidth: "none",
+          paddingBottom: "1rem",
+        }}
       >
-        <MessageList
-          messages={messages}
-          loading={loadingMessages}
-          userId={userId}
-          onContextMenu={handleContextMenu}
-          messagesEndRef={messagesEndRef}
-        />
+        {loadingMessages ? (
+          <div className="d-flex justify-content-center align-items-center h-100">
+            <Spinner animation="border" />
+          </div>
+        ) : (
+          <ListGroup variant="flush">
+            {messages.map((msg, idx) => {
+              const prevMsg = messages[idx - 1];
+              const showDate =
+                !prevMsg ||
+                new Date(prevMsg.createdAt).toDateString() !==
+                  new Date(msg.createdAt).toDateString();
+
+              const canDelete =
+                msg.sender._id === userId &&
+                new Date() - new Date(msg.createdAt) < 2 * 60 * 1000;
+
+              return (
+                <React.Fragment key={msg._id}>
+                  {showDate && (
+                    <div
+                      className="mx-auto text-center text-muted sticky-top mb-2 p-2"
+                      style={{
+                        minWidth: "200px",
+                        backgroundColor: "rgb(240, 242, 245)",
+                      }}
+                    >
+                      <span
+                        className="mx-auto p-2 mb-2"
+                        style={{
+                          fontSize: "0.85rem",
+                          borderRadius: "8px",
+                          backgroundColor: "rgb(210, 216, 223)",
+                        }}
+                      >
+                        {formatDate(msg.createdAt)}
+                      </span>
+                    </div>
+                  )}
+                  <ListGroup.Item
+                    className={`mb-2 rounded shadow-sm px-3 py-2 ${
+                      msg.sender._id === userId
+                        ? "bg-primary text-white ms-auto"
+                        : "bg-light me-auto"
+                    }`}
+                    style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
+                    onContextMenu={(e) => handleContextMenu(e, msg)}
+                    title={
+                      canDelete
+                        ? "Right-click to delete (within 2 minutes)"
+                        : undefined
+                    }
+                  >
+                    <div className="small fw-bold">
+                      {msg.sender.fullName || msg.sender.username}
+                    </div>
+                    {/* File preview */}
+                    {msg.file && msg.file.url && renderFile(msg.file)}
+                    {/* Text message */}
+                    {msg.content && <div>{msg.content}</div>}
+                    <div
+                      className="d-flex flex-row justify-content-end align-items-center mt-2"
+                      style={{ fontSize: "0.75rem" }}
+                    >
+                      <div
+                        className="d-flex flex-row align-items-center gap-0"
+                        style={{ width: "20%", gap: "2px" }}
+                      >
+                        <span
+                          className="text-dark"
+                          style={{ textAlign: "right" }}
+                        >
+                          {new Date(msg.createdAt).toLocaleTimeString([], {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                        </span>
+                        {msg.sender._id === userId && (
+                          <span
+                            className="text-light"
+                            style={{ textAlign: "right" }}
+                          >
+                            {msg.isRead ? (
+                              <CheckAll size={14} />
+                            ) : (
+                              <Check size={14} />
+                            )}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </ListGroup.Item>
+                </React.Fragment>
+              );
+            })}
+            <div ref={messagesEndRef} />
+          </ListGroup>
+        )}
+        {/* Custom context menu */}
         {contextMenu.visible && (
           <div
             style={{
@@ -309,18 +700,24 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
               left: contextMenu.x,
               background: "#fff",
               border: "1px solid #ccc",
-              color: "red",
               borderRadius: 4,
               zIndex: 9999,
               boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              padding: "4px 0",
               width: "auto",
+              padding: "4px 0",
             }}
           >
             <div
-              className="p-2"
-              style={{ cursor: "pointer", width: "auto" }}
-              onClick={() => handleDeleteMessage(contextMenu.msgId)}
+              style={{
+                padding: "8px 16px",
+                cursor: "pointer",
+                color: "red",
+                fontWeight: 500,
+              }}
+              onClick={() => {
+                handleDeleteMessage(contextMenu.msgId);
+                setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
+              }}
             >
               Delete
             </div>
@@ -329,22 +726,91 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
       </div>
 
       {/* Input */}
-      <MessageInput
-        newMsg={newMsg}
-        setNewMsg={setNewMsg}
-        sendMessage={sendMessage}
-        showEmojiPicker={showEmojiPicker}
-        setShowEmojiPicker={setShowEmojiPicker}
-        handleEmojiClick={handleEmojiClick}
-      />
+      <Form
+        onSubmit={(e) => {
+          e.preventDefault();
+          sendMessage();
+        }}
+        className="p-3 border-0 bg-transparent"
+      >
+        <div
+          className="chat-input rounded-3 shadow-sm d-flex w-100 align-items-center"
+          style={{ position: "relative" }}
+        >
+          {/* Message Input (70%) */}
+          <div className="input-wrapper me-2">
+            <FormControl
+              as="input"
+              placeholder="Message"
+              value={newMsg}
+              onChange={(e) => setNewMsg(e.target.value)}
+              className="border-0 shadow-none w-100 px-2 py-1"
+              disabled={uploading}
+            />
+          </div>
 
-      {/* User profile */}
+          {/* Icons (Each 10% of full width) */}
+          <div className="d-flex align-items-center justify-content-between icon-group">
+            <Button
+              variant="link"
+              className="icon-btn p-0"
+              type="button"
+              onClick={() => fileInputRef.current.click()}
+              disabled={uploading}
+              title="Attach file"
+            >
+              <Paperclip size={20} />
+            </Button>
+            <input
+              type="file"
+              ref={fileInputRef}
+              style={{ display: "none" }}
+              onChange={handleFileChange}
+              accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx"
+            />
+
+            <div style={{ position: "relative" }}>
+              <Button
+                variant="link"
+                className="icon-btn p-0"
+                type="button"
+                onClick={() => setShowEmojiPicker((v) => !v)}
+              >
+                <EmojiSmile size={18} />
+              </Button>
+              {showEmojiPicker && (
+                <div
+                  style={{
+                    position: "absolute",
+                    scrollbarWidth: "none",
+                    bottom: "40px",
+                    right: 0,
+                    zIndex: 1000,
+                    msOverflowStyle: "none",
+                  }}
+                >
+                  <EmojiPicker onEmojiClick={handleEmojiClick} />
+                </div>
+              )}
+            </div>
+
+            <Button
+              variant="link"
+              className="icon-btn submit-icon p-0"
+              type="submit"
+              disabled={uploading}
+            >
+              <Send size={20} />
+            </Button>
+          </div>
+        </div>
+      </Form>
+
       <UserProfileSidebar
-        show={showProfile}
-        onHide={() => setShowProfile(false)}
         userId={profileUserId}
         chat={chat}
-        currentUserId={userId}
+        show={showProfile}
+        onHide={() => setShowProfile(false)}
       />
     </div>
   );
@@ -357,46 +823,24 @@ const StartChatModal = ({
   setSearchTerm,
   onSearch,
   searchResults,
-  setSearchResults,
   onCreateChat,
   searching,
 }) => {
-  const debounceTimeout = useRef(null);
-
-  useEffect(() => {
-    // Auto-search after user stops typing for 400ms
-    if (!searchTerm.trim()) {
-      onSearch("");
-      setSearchResults([]);
-      return;
-    }
-
-    clearTimeout(debounceTimeout.current);
-    debounceTimeout.current = setTimeout(() => {
-      onSearch(searchTerm);
-    }, 400);
-
-    return () => clearTimeout(debounceTimeout.current);
-  }, [searchTerm]);
-
-  const handleClose = () => {
-    setSearchTerm("");
-    setSearchResults([]);
-    onHide();
-  };
-
   return (
-    <Modal show={show} onHide={handleClose} centered>
+    <Modal show={show} onHide={onHide} centered>
       <Modal.Header closeButton>
         <Modal.Title>Start New Chat</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <InputGroup className="mb-3">
           <FormControl
+            className="mb-3"
             placeholder="Search users by name or username"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && onSearch(searchTerm)}
           />
+          <Button onClick={() => onSearch(searchTerm)}>Search</Button>
         </InputGroup>
 
         {searching ? (
@@ -413,6 +857,7 @@ const StartChatModal = ({
                 key={user._id}
                 action
                 onClick={() => onCreateChat(user)}
+                className="hover-shadow"
               >
                 {user.fullName || user.username}
               </ListGroup.Item>

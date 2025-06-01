@@ -52,25 +52,24 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send-message', async (data) => {
+    console.log("Received message data:", data);
     try {
-      const { senderId, chatId, content, media, messageType } = data;
+      const { senderId, chatId, content, file, messageType } = data;
 
-      const newMessage = new Message({
+      const message = await new Message({
         sender: senderId,
         chat: chatId,
         content,
-        media,
-        messageType: messageType || 'text',
-        readBy: [senderId],
+        file,         // <-- this is the file object
+        messageType,  // <-- "file" or "text"
       });
-
-      const savedMessage = await newMessage.save();
+      await message.save();
 
       // Update latestMessage on chat
-      await Chat.findByIdAndUpdate(chatId, { latestMessage: savedMessage._id });
+      await Chat.findByIdAndUpdate(chatId, { latestMessage: message._id });
 
       // Populate sender before emitting
-      const populatedMessage = await savedMessage.populate('sender', 'username fullName');
+      const populatedMessage = await message.populate('sender', 'username fullName');
 
       io.to(chatId).emit('receive-message', populatedMessage);
     } catch (err) {

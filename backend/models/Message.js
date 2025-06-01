@@ -6,9 +6,9 @@ const messageSchema = new mongoose.Schema({
   chat: { type: mongoose.Schema.Types.ObjectId, ref: 'Chat' },
   content: String,
   file: {
-    url: String,
-    type: String,
-    name: String,
+    url: { type: String },
+    type: { type: String },
+    name: { type: String },
   },
   messageType: { type: String, default: 'text' },
   readBy: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
