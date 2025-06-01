@@ -52,7 +52,6 @@ io.on('connection', (socket) => {
   });
 
   socket.on('send-message', async (data) => {
-    console.log("Received message data:", data);
     try {
       const { senderId, chatId, content, file, messageType } = data;
 
@@ -60,13 +59,20 @@ io.on('connection', (socket) => {
         sender: senderId,
         chat: chatId,
         content,
-        file,         // <-- this is the file object
-        messageType,  // <-- "file" or "text"
+        file,
+        messageType,
       });
       await message.save();
 
       // Update latestMessage on chat
-      await Chat.findByIdAndUpdate(chatId, { latestMessage: message._id });
+      await Chat.findByIdAndUpdate(chatId, {
+        latestMessage: {
+          _id: message._id,
+          content: content, // just the real content ("" for files)
+          sender: senderId,
+          createdAt: message.createdAt,
+        },
+      });
 
       // Populate sender before emitting
       const populatedMessage = await message.populate('sender', 'username fullName');
