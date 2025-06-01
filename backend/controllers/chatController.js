@@ -165,4 +165,37 @@ const getChatById = async (req, res) => {
   }
 };
 
-module.exports = { createChat, fetchChat, createGroupChat, getChatById };
+const addMemberToGroup = async (req, res) => {
+  const { chatId, userId } = req.body; // <-- get both from body
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    // Prevent duplicate
+    if (chat.users.includes(userId)) {
+      return res.status(400).json({ message: "User already in group" });
+    }
+
+    chat.users.push(userId);
+    await chat.save();
+    res.json({ success: true, chat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to add member" });
+  }
+};
+
+const leaveGroupChat = async (req, res) => {
+  const { chatId, userId } = req.body;
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    chat.users = chat.users.filter(u => u.toString() !== userId);
+    await chat.save();
+    res.json({ success: true, chat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to leave group" });
+  }
+};
+
+module.exports = { createChat, fetchChat, createGroupChat, getChatById, addMemberToGroup, leaveGroupChat };

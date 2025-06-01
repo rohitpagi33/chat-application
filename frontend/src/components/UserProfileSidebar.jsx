@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Offcanvas, Spinner, ListGroup, Badge, Button } from "react-bootstrap";
+import { Offcanvas, Spinner, ListGroup, Button } from "react-bootstrap";
 import axios from "axios";
+import { StarFill, GearFill, PersonPlusFill, BoxArrowRight } from "react-bootstrap-icons";
+import GroupChatSettings from "./GroupChatSettings"; // Scaffolded below
+import AddMemberModal from "./AddMemberModal"; // Scaffolded below
 
 const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
   const [user, setUser] = useState(null);
@@ -12,6 +15,10 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
   const [selectedMember, setSelectedMember] = useState(null);
   const [memberProfile, setMemberProfile] = useState(null);
   const [loadingMember, setLoadingMember] = useState(false);
+
+  // Settings & Add Member modals
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAddMember, setShowAddMember] = useState(false);
 
   // For direct chat: fetch user info
   useEffect(() => {
@@ -72,6 +79,26 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
         (a.fullName || a.username).localeCompare(b.fullName || b.username)
       ),
   ];
+
+  // Leave group handler
+  const handleLeaveGroup = async () => {
+    try {
+      await axios.post("http://localhost:5000/api/chat/leave", { chatId, userId });
+      onHide();
+    } catch (err) {
+      alert("Failed to leave group.");
+    }
+  };
+
+  // Refresh group users after adding members
+  const refreshGroupUsers = () => {
+    axios
+      .get(`http://localhost:5000/api/chat/${chat._id}`)
+      .then((res) => {
+        setGroupUsers(res.data.users || []);
+        setAdmin(res.data.admin || null);
+      });
+  };
 
   return (
     <Offcanvas show={show} onHide={onHide} placement="end">
@@ -201,9 +228,9 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
               )}
               <h5 className="text-center">{chat.chatName}</h5>
               <div className="mb-2 text-center">
-                <Badge bg="secondary">
+                <span className="badge bg-secondary">
                   {groupUsers.length} member{groupUsers.length !== 1 ? "s" : ""}
-                </Badge>
+                </span>
               </div>
               <div className="mb-2 text-center">
                 <strong>Admin:</strong>{" "}
@@ -218,6 +245,38 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
                   : "N/A"}
               </div>
               <hr />
+              {/* Action icons row */}
+              <div className="d-flex justify-content-center mb-3 gap-4">
+                <GearFill
+                  size={22}
+                  role="button"
+                  title="Group Settings"
+                  onClick={() => setShowSettings(true)}
+                  style={{ cursor: "pointer" }}
+                />
+                <PersonPlusFill
+                  size={22}
+                  role="button"
+                  title="Add Member"
+                  onClick={() => setShowAddMember(true)}
+                  style={{ cursor: "pointer" }}
+                />
+                <BoxArrowRight
+                  size={22}
+                  role="button"
+                  title="Leave Group"
+                  onClick={handleLeaveGroup}
+                  style={{ cursor: "pointer", color: "#dc3545" }}
+                />
+              </div>
+              <GroupChatSettings show={showSettings} onHide={() => setShowSettings(false)} />
+              <AddMemberModal
+                show={showAddMember}
+                onHide={() => setShowAddMember(false)}
+                chatId={chat._id}
+                currentMembers={groupUsers}
+                onMembersAdded={refreshGroupUsers}
+              />
               <div>
                 <strong>Members:</strong>
                 <ListGroup className="mt-2">
@@ -271,14 +330,10 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
                           </span>
                         </div>
                       )}
-                      <span style={{ flex: 1 }}>
-                        {member.fullName || member.username}
-                        {admin && admin._id === member._id && (
-                          <Badge bg="info" className="ms-2">
-                            Admin
-                          </Badge>
-                        )}
-                      </span>
+                      <span style={{ flex: 1 }}>{member.fullName || member.username}</span>
+                      {admin && admin._id === member._id && (
+                        <StarFill color="#28a745" size={18} style={{ marginLeft: "auto" }} title="Admin" />
+                      )}
                     </ListGroup.Item>
                   ))}
                 </ListGroup>
@@ -287,7 +342,6 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
           )
         ) : user ? (
           <div className="text-center">
-            {/* Placeholder avatar */}
             <div className="mx-auto mb-3" style={{ width: 80, height: 80 }}>
               {user.profilePhoto ? (
                 <img
