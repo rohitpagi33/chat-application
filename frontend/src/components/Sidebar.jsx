@@ -47,7 +47,10 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
           width: 35,
           height: 35,
           borderRadius: "50%",
-          marginRight: 8,
+          marginRight: 12, // slightly more margin for spacing
+          border: "1.5px solid #e0e0e0", // subtle border
+          objectFit: "cover", // ensures the image fills the circle nicely
+          background: "#fff", // fallback background
         }}
       />
     ) : (
@@ -65,7 +68,10 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
         width: 35,
         height: 35,
         borderRadius: "50%",
-        marginRight: 8,
+        marginRight: 12,
+        border: "1.5px solid #e0e0e0",
+        objectFit: "cover",
+        background: "#fff",
       }}
     />
   ) : (

@@ -16,7 +16,7 @@ const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
     },
   ];
 
-  const handleCreateGroup = async ({ groupName, users }) => {
+  const handleCreateGroup = async ({ groupName, users, groupPhoto }) => {
     try {
       const user = JSON.parse(localStorage.getItem("user"));
       const currentUserId = user._id;
@@ -30,16 +30,17 @@ const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
         userIds.push(currentUserId); // add current user to group if not already included
       }
 
-      const response = await axios.post(
+      await axios.post(
         "http://localhost:5000/api/chat/group",
         {
           chatName: groupName,
           users: userIds,
           isGroupChat: true,
           adminId: currentUserId,
+          groupPhoto, // <-- make sure this is included!
         }
       );
-      alert(" created group chat successfully");
+      alert("Created group chat successfully");
     } catch (error) {
       console.error("Group creation failed:", error);
       alert("Failed to create group chat");

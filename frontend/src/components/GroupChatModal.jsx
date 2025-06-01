@@ -1,6 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, ListGroup, Spinner } from "react-bootstrap";
 import axios from "axios";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
   const [groupName, setGroupName] = useState("");
@@ -8,6 +13,8 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
   const [search, setSearch] = useState("");
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [groupPhoto, setGroupPhoto] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   // Perform live search on search input change
   useEffect(() => {
@@ -56,11 +63,12 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
       alert("Please enter a group name and select at least one user");
       return;
     }
-    onCreateGroup({ groupName, users: selectedUsers });
+    onCreateGroup({ groupName, users: selectedUsers, groupPhoto });
     setGroupName("");
     setSelectedUsers([]);
     setSearch("");
     setSearchResults([]);
+    setGroupPhoto("");
     onClose();
   };
 
@@ -71,6 +79,7 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
       setSelectedUsers([]);
       setSearch("");
       setSearchResults([]);
+      setGroupPhoto("");
       onClose();
     }}>
         <Modal.Title>Create Group Chat</Modal.Title>
@@ -120,6 +129,53 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
             {selectedUsers.map((u) => u.fullName || u.name || u.username).join(", ")}
           </div>
         </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Group Photo</Form.Label>
+          <Form.Control
+            type="file"
+            accept="image/*"
+            onChange={async (e) => {
+              const file = e.target.files[0];
+              if (!file) return;
+              setUploading(true);
+              const fileExt = file.name.split('.').pop();
+              const filePath = `group-${Date.now()}.${fileExt}`;
+
+              // Upload to Supabase
+              const { data, error } = await supabase.storage
+                .from("avatars")
+                .upload(filePath, file);
+
+              if (error) {
+                alert("Upload failed!");
+                setUploading(false);
+                return;
+              }
+              // Get public URL
+              const { data: urlData, error: urlError } = supabase.storage
+                .from("avatars")
+                .getPublicUrl(filePath);
+
+              if (urlError) {
+                alert("Failed to get public URL!");
+                setUploading(false);
+                return;
+              }
+              setGroupPhoto(urlData.publicUrl);
+              setUploading(false);
+            }}
+            disabled={uploading}
+          />
+          {uploading && <div>Uploading...</div>}
+          {groupPhoto && (
+            <img
+              src={groupPhoto}
+              alt="Group"
+              style={{ width: 60, height: 60, borderRadius: "50%", marginTop: 8 }}
+            />
+          )}
+        </Form.Group>
       </Modal.Body>
       <Modal.Footer>
         <Button variant="secondary" onClick={() => {
@@ -127,6 +183,7 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
       setSelectedUsers([]);
       setSearch("");
       setSearchResults([]);
+      setGroupPhoto("");
       onClose();
     }}>
           Cancel

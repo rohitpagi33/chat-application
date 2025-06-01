@@ -111,12 +111,12 @@ const fetchChat = async (req, res) => {
 };
 
 const createGroupChat = async (req, res) => {
-  const { chatName, users, isGroupChat, adminId } = req.body;
+  console.log("REQ.BODY:", req.body); // Debug log
+
+  const { chatName, users, isGroupChat, adminId, groupPhoto } = req.body;
 
   if (!chatName || !users || users.length < 1 || !adminId) {
-    return res
-      .status(400)
-      .json({ message: "Please provide chatName, at least 2 users, and adminId" });
+    return res.status(400).json({ message: "Please provide chatName, at least 2 users, and adminId" });
   }
 
   try {
@@ -124,7 +124,8 @@ const createGroupChat = async (req, res) => {
       chatName,
       users,
       isGroupChat: true,
-      admin: adminId, // <-- Set the admin here
+      admin: adminId,
+      groupPhoto: groupPhoto || "", // Save the URL
     });
 
     await groupChat.save();

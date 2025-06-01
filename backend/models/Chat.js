@@ -7,7 +7,8 @@ const chatSchema = new Schema(
     isGroupChat: { type: Boolean, default: false },
     users: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     latestMessage: { type: mongoose.Schema.Types.ObjectId, ref: "Message" },
-    admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // <-- Add this line
+    admin: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    groupPhoto: { type: String, default: "" }, // <-- Add this line
   },
   { timestamps: true }
 );
