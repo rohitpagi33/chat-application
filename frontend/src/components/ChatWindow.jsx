@@ -1,17 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Paperclip,
-  EmojiSmile,
-  At,
-  Send,
-  Check,
-  CheckAll,
-  FileEarmarkPdf,
-  FileEarmarkImage,
-  FileEarmark,
-} from "react-bootstrap-icons";
-import "../App.css";
-import {
   Button,
   Form,
   ListGroup,
@@ -19,14 +7,14 @@ import {
   InputGroup,
   FormControl,
   Spinner,
-  Row,
-  Col,
 } from "react-bootstrap";
-import axios from "axios";
 import { io } from "socket.io-client";
+import axios from "axios";
 import UserProfileSidebar from "./UserProfileSidebar";
-import EmojiPicker from "emoji-picker-react";
 import { createClient } from "@supabase/supabase-js";
+import MessageList from "./MessageList";
+import MessageInput from "./MessageInput";
+import { formatDate, renderFile } from "../utils/chatUtils";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
@@ -145,7 +133,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
     const filePath = `${Date.now()}_${file.name}`;
     const { data, error } = await supabase.storage
-      .from("avatars") // use avatars bucket
+      .from("avatars")
       .upload(filePath, file);
 
     if (error) {
@@ -155,7 +143,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     }
 
     const { data: publicUrlData } = supabase.storage
-      .from("avatars") // use avatars bucket
+      .from("avatars")
       .getPublicUrl(filePath);
 
     setUploading(false);
@@ -250,193 +238,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     setShowEmojiPicker(false);
   };
 
-  const formatDate = (dateStr) => {
-    const date = new Date(dateStr);
-    const now = new Date();
-
-    const dateOnly = new Date(
-      date.getFullYear(),
-      date.getMonth(),
-      date.getDate()
-    );
-    const nowOnly = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-
-    const diffTime = nowOnly - dateOnly;
-    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) {
-      // Show weekday name
-      return date.toLocaleDateString(undefined, { weekday: "long" });
-    }
-
-    if (date.getFullYear() === now.getFullYear()) {
-      return date.toLocaleDateString(undefined, {
-        day: "numeric",
-        month: "long",
-      });
-    }
-    return date.toLocaleDateString(undefined, {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-  };
-
-  // Helper to render file preview
-  const renderFile = (file) => {
-    if (!file?.url) return null;
-    const ext = file.name?.split(".").pop().toLowerCase();
-
-    // Common style for file box
-    const fileBoxStyle = {
-      background: "#f8f9fa",
-      border: "1px solid #e0e0e0",
-      borderRadius: 8,
-      padding: "12px 16px",
-      marginBottom: 6,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-      maxWidth: 320,
-      wordBreak: "break-all",
-    };
-
-    // File name style
-    const fileNameStyle = {
-      color: "#222",
-      fontWeight: 600,
-      fontSize: "1rem",
-      marginBottom: 2,
-      textDecoration: "none",
-    };
-
-    if (file.type?.startsWith("image/")) {
-      return (
-        <div style={fileBoxStyle}>
-          <a href={file.url} target="_blank" rel="noopener noreferrer">
-            <img
-              src={file.url}
-              alt={file.name}
-              style={{
-                maxWidth: 80,
-                maxHeight: 80,
-                borderRadius: 6,
-                border: "1px solid #eee",
-                marginRight: 10,
-              }}
-            />
-          </a>
-          <div>
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={fileNameStyle}
-            >
-              {file.name}
-            </a>
-            <div>
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="small text-primary"
-                style={{ textDecoration: "underline" }}
-              >
-                View Image
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    if (ext === "pdf") {
-      return (
-        <div style={fileBoxStyle}>
-          <FileEarmarkPdf size={36} className="me-2 text-danger" />
-          <div>
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={fileNameStyle}
-            >
-              {file.name}
-            </a>
-            <div>
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="small text-primary"
-                style={{ textDecoration: "underline" }}
-              >
-                Open PDF
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    if (["ppt", "pptx"].includes(ext)) {
-      return (
-        <div style={fileBoxStyle}>
-          <FileEarmark size={36} className="me-2 text-warning" />
-          <div>
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={fileNameStyle}
-            >
-              {file.name}
-            </a>
-            <div>
-              <a
-                href={file.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="small text-primary"
-                style={{ textDecoration: "underline" }}
-              >
-                Open Presentation
-              </a>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    // Generic file
-    return (
-      <div style={fileBoxStyle}>
-        <FileEarmark size={36} className="me-2 text-secondary" />
-        <div>
-          <a
-            href={file.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={fileNameStyle}
-          >
-            {file.name}
-          </a>
-          <div>
-            <a
-              href={file.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="small text-primary"
-              style={{ textDecoration: "underline" }}
-            >
-              Open File
-            </a>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
   if (!chat) {
     return (
       <div className="d-flex flex-column h-100 justify-content-center align-items-center text-center p-4">
@@ -465,8 +266,8 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   return (
     <div className="d-flex flex-column h-100">
       {/* Header */}
-      <div className="border-bottom p-3 bg-black shadow-sm sticky-top d-flex align-items-center gap-3">
-        {/* Avatar/Profile/Group Photo */}
+      <div className="border-bottom d-flex p-3 bg-black shadow-sm sticky-top align-items-center">
+        <div className="d-flex align-items-center" style={{ width: 50, height: 50 }}>
         {chat.isGroupChat ? (
           chat.groupPhoto ? (
             <img
@@ -476,11 +277,10 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                 width: 40,
                 height: 40,
                 borderRadius: "50%",
-                objectFit: "cover",
                 border: "2px solid #e0e0e0",
                 background: "#fff",
               }}
-              className="me-2"
+              className=""
             />
           ) : (
             <div
@@ -545,8 +345,9 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             );
           })()
         )}
-
-        {/* Chat Name */}
+        </div>
+        <div className="">
+          {/* Chat Name */}
         <h5 className="m-0 text-truncate" style={{ flex: 1 }}>
           {chat.isGroupChat ? (
             <span
@@ -571,17 +372,19 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             </span>
           )}
         </h5>
-        {/* Online status for 1-to-1 */}
+
+          {/* Online status for 1-to-1 */}
         {!chat.isGroupChat &&
           onlineUsers.includes(
             String(
               chat.users.find((u) => String(u._id) !== String(userId))?._id
             )
           ) && (
-            <span className="text-success fw-semibold ms-2" style={{ fontSize: "0.95rem" }}>
+            <span className="text-success fw-semibold" style={{ fontSize: "0.75rem" }}>
               Online
             </span>
           )}
+        </div>
       </div>
 
       {/* Messages */}
@@ -593,218 +396,32 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           paddingBottom: "1rem",
         }}
       >
-        {loadingMessages ? (
-          <div className="d-flex justify-content-center align-items-center h-100">
-            <Spinner animation="border" />
-          </div>
-        ) : (
-          <ListGroup variant="flush">
-            {messages.map((msg, idx) => {
-              const prevMsg = messages[idx - 1];
-              const showDate =
-                !prevMsg ||
-                new Date(prevMsg.createdAt).toDateString() !==
-                  new Date(msg.createdAt).toDateString();
-
-              const canDelete =
-                msg.sender._id === userId &&
-                new Date() - new Date(msg.createdAt) < 2 * 60 * 1000;
-
-              return (
-                <React.Fragment key={msg._id}>
-                  {showDate && (
-                    <div
-                      className="mx-auto text-center text-muted sticky-top mb-2 p-2"
-                      style={{
-                        minWidth: "200px",
-                        backgroundColor: "rgb(240, 242, 245)",
-                      }}
-                    >
-                      <span
-                        className="mx-auto p-2 mb-2"
-                        style={{
-                          fontSize: "0.85rem",
-                          borderRadius: "8px",
-                          backgroundColor: "rgb(210, 216, 223)",
-                        }}
-                      >
-                        {formatDate(msg.createdAt)}
-                      </span>
-                    </div>
-                  )}
-                  <ListGroup.Item
-                    className={`mb-2 rounded shadow-sm px-3 py-2 ${
-                      msg.sender._id === userId
-                        ? "bg-primary text-white ms-auto"
-                        : "bg-light me-auto"
-                    }`}
-                    style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
-                    onContextMenu={(e) => handleContextMenu(e, msg)}
-                    title={
-                      canDelete
-                        ? "Right-click to delete (within 2 minutes)"
-                        : undefined
-                    }
-                  >
-                    <div className="small fw-bold">
-                      {msg.sender.fullName || msg.sender.username}
-                    </div>
-                    {/* File preview */}
-                    {msg.file && msg.file.url && renderFile(msg.file)}
-                    {/* Text message */}
-                    {msg.content && <div>{msg.content}</div>}
-                    <div
-                      className="d-flex flex-row justify-content-end align-items-center mt-2"
-                      style={{ fontSize: "0.75rem" }}
-                    >
-                      <div
-                        className="d-flex flex-row align-items-center gap-0"
-                        style={{ width: "20%", gap: "2px" }}
-                      >
-                        <span
-                          className="text-dark"
-                          style={{ textAlign: "right" }}
-                        >
-                          {new Date(msg.createdAt).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </span>
-                        {msg.sender._id === userId && (
-                          <span
-                            className="text-light"
-                            style={{ textAlign: "right" }}
-                          >
-                            {msg.isRead ? (
-                              <CheckAll size={14} />
-                            ) : (
-                              <Check size={14} />
-                            )}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </ListGroup.Item>
-                </React.Fragment>
-              );
-            })}
-            <div ref={messagesEndRef} />
-          </ListGroup>
-        )}
-        {/* Custom context menu */}
-        {contextMenu.visible && (
-          <div
-            style={{
-              position: "fixed",
-              top: contextMenu.y,
-              left: contextMenu.x,
-              background: "#fff",
-              border: "1px solid #ccc",
-              borderRadius: 4,
-              zIndex: 9999,
-              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-              width: "auto",
-              padding: "4px 0",
-            }}
-          >
-            <div
-              style={{
-                padding: "8px 16px",
-                cursor: "pointer",
-                color: "red",
-                fontWeight: 500,
-              }}
-              onClick={() => {
-                handleDeleteMessage(contextMenu.msgId);
-                setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
-              }}
-            >
-              Delete
-            </div>
-          </div>
-        )}
+        <MessageList
+          messages={messages}
+          loading={loadingMessages}
+          userId={userId}
+          onContextMenu={handleContextMenu}
+          messagesEndRef={messagesEndRef}
+          formatDate={formatDate}
+          renderFile={renderFile}
+          contextMenu={contextMenu}
+          handleDeleteMessage={handleDeleteMessage}
+          setContextMenu={setContextMenu}
+        />
       </div>
 
       {/* Input */}
-      <Form
-        onSubmit={(e) => {
-          e.preventDefault();
-          sendMessage();
-        }}
-        className="p-3 border-0 bg-transparent"
-      >
-        <div
-          className="chat-input rounded-3 shadow-sm d-flex w-100 align-items-center"
-          style={{ position: "relative" }}
-        >
-          {/* Message Input (70%) */}
-          <div className="input-wrapper me-2">
-            <FormControl
-              as="input"
-              placeholder="Message"
-              value={newMsg}
-              onChange={(e) => setNewMsg(e.target.value)}
-              className="border-0 shadow-none w-100 px-2 py-1"
-              disabled={uploading}
-            />
-          </div>
-
-          {/* Icons (Each 10% of full width) */}
-          <div className="d-flex align-items-center justify-content-between icon-group">
-            <Button
-              variant="link"
-              className="icon-btn p-0"
-              type="button"
-              onClick={() => fileInputRef.current.click()}
-              disabled={uploading}
-              title="Attach file"
-            >
-              <Paperclip size={20} />
-            </Button>
-            <input
-              type="file"
-              ref={fileInputRef}
-              style={{ display: "none" }}
-              onChange={handleFileChange}
-              accept="image/*,.pdf,.ppt,.pptx,.doc,.docx,.xls,.xlsx"
-            />
-
-            <div style={{ position: "relative" }}>
-              <Button
-                variant="link"
-                className="icon-btn p-0"
-                type="button"
-                onClick={() => setShowEmojiPicker((v) => !v)}
-              >
-                <EmojiSmile size={18} />
-              </Button>
-              {showEmojiPicker && (
-                <div
-                  style={{
-                    position: "absolute",
-                    scrollbarWidth: "none",
-                    bottom: "40px",
-                    right: 0,
-                    zIndex: 1000,
-                    msOverflowStyle: "none",
-                  }}
-                >
-                  <EmojiPicker onEmojiClick={handleEmojiClick} />
-                </div>
-              )}
-            </div>
-
-            <Button
-              variant="link"
-              className="icon-btn submit-icon p-0"
-              type="submit"
-              disabled={uploading}
-            >
-              <Send size={20} />
-            </Button>
-          </div>
-        </div>
-      </Form>
+      <MessageInput
+        newMsg={newMsg}
+        setNewMsg={setNewMsg}
+        sendMessage={sendMessage}
+        uploading={uploading}
+        fileInputRef={fileInputRef}
+        handleFileChange={handleFileChange}
+        showEmojiPicker={showEmojiPicker}
+        setShowEmojiPicker={setShowEmojiPicker}
+        handleEmojiClick={handleEmojiClick}
+      />
 
       <UserProfileSidebar
         userId={profileUserId}

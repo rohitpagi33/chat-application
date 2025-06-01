@@ -1,5 +1,3 @@
-// --- Scaffolded AddMemberModal.js ---
-// filepath: c:\Users\ADMIN\Desktop\Projects\chat-application\frontend\src\components\AddMemberModal.jsx
 import React, { useState } from "react";
 import { Modal, Form, Button, ListGroup, Spinner } from "react-bootstrap";
 import axios from "axios";
