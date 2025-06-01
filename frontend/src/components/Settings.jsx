@@ -116,7 +116,6 @@ const Settings = ({ onBack }) => {
             width: 90,
             height: 90,
             borderRadius: "50%",
-            objectFit: "cover",
             border: "2px solid #eee",
           }}
         />

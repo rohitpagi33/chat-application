@@ -14,7 +14,7 @@ const Message = ({ msg, userId, onContextMenu, renderFile }) => {
           ? "bg-primary text-white ms-auto"
           : "bg-light me-auto"
       }`}
-      style={{ maxWidth: "70%", transition: "all 0.3s ease" }}
+      style={{ maxWidth: "60%", transition: "all 0.3s ease" }}
       onContextMenu={(e) => onContextMenu(e, msg)}
       title={canDelete ? "Right-click to delete (within 2 minutes)" : undefined}
     >

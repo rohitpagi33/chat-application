@@ -186,15 +186,39 @@ const addMemberToGroup = async (req, res) => {
 
 const leaveGroupChat = async (req, res) => {
   const { chatId, userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ message: "userId is required" });
+  }
   try {
+    console.log("leaveGroupChat called with:", chatId, userId);
     const chat = await Chat.findById(chatId);
-    if (!chat) return res.status(404).json({ message: "Chat not found" });
+    if (!chat) {
+      console.log("Chat not found");
+      return res.status(404).json({ message: "Chat not found" });
+    }
 
-    chat.users = chat.users.filter(u => u.toString() !== userId);
+    console.log("Chat before:", chat);
+
+    // Ensure userId is a string for comparison
+    chat.users = chat.users.filter(u => u.toString() !== userId.toString());
+
+    // If admin left, assign new admin if possible
+    if (chat.admin && chat.admin.toString() === userId.toString()) {
+      chat.admin = chat.users.length > 0 ? chat.users[0] : null;
+    }
+
+    if (chat.users.length === 0) {
+      await chat.deleteOne();
+      console.log("Chat deleted");
+      return res.json({ success: true, deleted: true });
+    }
+
     await chat.save();
+    console.log("Chat after:", chat);
     res.json({ success: true, chat });
   } catch (err) {
-    res.status(500).json({ message: "Failed to leave group" });
+    console.error("leaveGroupChat error:", err);
+    res.status(500).json({ message: "Failed to leave group", error: err.message });
   }
 };
 

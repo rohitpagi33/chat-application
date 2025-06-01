@@ -11,6 +11,7 @@ import {
 import { io } from "socket.io-client";
 import axios from "axios";
 import UserProfileSidebar from "./UserProfileSidebar";
+import GroupProfileSidebar from "./GroupProfileSidebar";
 import { createClient } from "@supabase/supabase-js";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
@@ -313,7 +314,6 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
                   width: 40,
                   height: 40,
                   borderRadius: "50%",
-                  objectFit: "cover",
                   border: "2px solid #e0e0e0",
                   background: "#fff",
                 }}
@@ -423,12 +423,21 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
         handleEmojiClick={handleEmojiClick}
       />
 
-      <UserProfileSidebar
-        userId={profileUserId}
-        chat={chat}
-        show={showProfile}
-        onHide={() => setShowProfile(false)}
-      />
+      {chat.isGroupChat ? (
+        <GroupProfileSidebar
+          userId={userId}
+          chat={chat}
+          show={showProfile}
+          onHide={() => setShowProfile(false)}
+        />
+      ) : (
+        <UserProfileSidebar
+          userId={profileUserId}
+          chat={chat}
+          show={showProfile}
+          onHide={() => setShowProfile(false)}
+        />
+      )}
     </div>
   );
 };

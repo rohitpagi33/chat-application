@@ -1,6 +1,6 @@
 import React from "react";
 import { ListGroup, Badge } from "react-bootstrap";
-import { PersonCircle } from "react-bootstrap-icons"; // <-- Add this line
+import { PersonCircle } from "react-bootstrap-icons";
 
 const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
   return (
@@ -66,10 +66,11 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                           width: 35,
                           height: 35,
                           borderRadius: "50%",
-                          marginRight: 12, // slightly more margin for spacing
-                          border: "1.5px solid #e0e0e0", // subtle border
-                          objectFit: "cover", // ensures the image fills the circle nicely
-                          background: "#fff", // fallback background
+                          marginRight: 12,
+
+                          maxWidth: "35px",
+                          border: "1.5px solid #e0e0e0",
+                          background: "#fff",
                         }}
                       />
                     ) : (
@@ -88,8 +89,8 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                         height: 35,
                         borderRadius: "50%",
                         marginRight: 12,
+                        maxWidth: "35px",
                         border: "1.5px solid #e0e0e0",
-                        objectFit: "cover",
                         background: "#fff",
                       }}
                     />
