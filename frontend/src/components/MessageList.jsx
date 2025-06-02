@@ -131,10 +131,10 @@ const MessageList = ({
           size="sm"
           onClick={scrollToBottom}
           style={{
-            position: "absolute",
-            bottom: 24,
-            right: 16,
-            zIndex: 10,
+            position: "fixed", // <-- fixed, not absolute
+            bottom: 110,        // adjust as needed
+            right: 50,         // adjust as needed
+            zIndex: 1000,      // high z-index so it's always on top
             borderRadius: "50%",
             width: 36,
             height: 36,
@@ -146,6 +146,7 @@ const MessageList = ({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            transition: "opacity 0.3s",
           }}
           aria-label="Scroll to latest message"
         >
