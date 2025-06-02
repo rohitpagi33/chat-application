@@ -49,7 +49,13 @@ const MessageList = ({
     <div
       ref={listRef}
       onScroll={handleScroll}
-      style={{ height: "100%", overflowY: "auto", position: "relative" }}
+      style={{
+        height: "100%",
+        overflowY: "auto",
+        position: "relative",
+        scrollbarWidth: "none",        // <-- for Firefox
+        msOverflowStyle: "none",       // <-- for IE and Edge
+      }}
     >
       <ListGroup variant="flush">
         {messages.map((msg, idx) => {
