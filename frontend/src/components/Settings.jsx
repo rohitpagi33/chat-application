@@ -141,6 +141,7 @@ const Settings = ({ onBack }) => {
                   name="fullName"
                   value={userData.fullName}
                   onChange={handleChange}
+                  style={{ width: "auto" }}
                 />
               ) : (
                 userData.fullName

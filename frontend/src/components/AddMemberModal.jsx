@@ -1,28 +1,37 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, ListGroup, Spinner } from "react-bootstrap";
 import axios from "axios";
+
 const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }) => {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
   const [adding, setAdding] = useState(false);
 
-  const handleSearch = async () => {
-    setLoading(true);
-    try {
-      const res = await axios.post("http://localhost:5000/api/user/search", { search });
-      // Exclude already added members
-      setResults(res.data.filter(u => !currentMembers.some(m => m._id === u._id)));
-    } catch {
+  // Debounce search
+  useEffect(() => {
+    if (!search) {
       setResults([]);
+      return;
     }
-    setLoading(false);
-  };
+    setLoading(true);
+    const timeout = setTimeout(() => {
+      axios
+        .post("http://localhost:5000/api/user/search", { search })
+        .then(res => {
+          setResults(res.data.filter(u => !currentMembers.some(m => m._id === u._id)));
+        })
+        .catch(() => setResults([]))
+        .finally(() => setLoading(false));
+    }, 400); // 400ms debounce
+
+    return () => clearTimeout(timeout);
+  }, [search, currentMembers]);
 
   const handleAdd = async (userId) => {
     setAdding(true);
     try {
-      await axios.post("http://localhost:5000/api/chat/add", { chatId, userId }); // <-- send both in body
+      await axios.post("http://localhost:5000/api/chat/add", { chatId, userId });
       onMembersAdded();
       onHide();
     } catch {
@@ -40,7 +49,6 @@ const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }
         <Form
           onSubmit={e => {
             e.preventDefault();
-            handleSearch();
           }}
         >
           <Form.Control
@@ -50,9 +58,7 @@ const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }
             onChange={e => setSearch(e.target.value)}
             className="mb-2"
           />
-          <Button type="submit" variant="primary" disabled={loading || !search}>
-            {loading ? <Spinner size="sm" animation="border" /> : "Search"}
-          </Button>
+          {loading && <Spinner size="sm" animation="border" />}
         </Form>
         <ListGroup className="mt-3">
           {results.map(user => (
@@ -78,4 +84,5 @@ const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }
     </Modal>
   );
 };
+
 export default AddMemberModal;

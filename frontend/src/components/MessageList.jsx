@@ -17,7 +17,7 @@ const MessageList = ({
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center h-100">
-        <Spinner animation="border" />
+        <Spinner animation="border" style={{color: 'blue'}} />
       </div>
     );
   }

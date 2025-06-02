@@ -222,4 +222,22 @@ const leaveGroupChat = async (req, res) => {
   }
 };
 
-module.exports = { createChat, fetchChat, createGroupChat, getChatById, addMemberToGroup, leaveGroupChat };
+const removeMemberFromGroup = async (req, res) => {
+  const { chatId, memberId } = req.body;
+  try {
+    const chat = await Chat.findById(chatId);
+    if (!chat) return res.status(404).json({ message: "Chat not found" });
+
+    chat.users = chat.users.filter(u => u.toString() !== memberId);
+
+    if (chat.admin && chat.admin.toString() === memberId) {
+      chat.admin = chat.users.length > 0 ? chat.users[0] : null;
+    }
+    await chat.save();
+    res.json({ success: true, chat });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to remove member" });
+  }
+};
+
+module.exports = { createChat, fetchChat, createGroupChat, getChatById, addMemberToGroup, leaveGroupChat, removeMemberFromGroup };

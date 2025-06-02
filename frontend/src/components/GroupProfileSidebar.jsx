@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { Offcanvas, Spinner, ListGroup, Button } from "react-bootstrap";
 import axios from "axios";
-import { StarFill, GearFill, PersonPlusFill, BoxArrowRight } from "react-bootstrap-icons";
+import {
+  StarFill,
+  GearFill,
+  PersonPlusFill,
+  BoxArrowRight,
+} from "react-bootstrap-icons";
 import GroupChatSettings from "./GroupChatSettings";
 import AddMemberModal from "./AddMemberModal";
 
@@ -51,43 +56,53 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
   }, [show]);
 
   const sortedMembers = [
-    ...(admin ? groupUsers.filter((u) => u._id === admin._id) : []),
+    // Current user first
+    ...groupUsers.filter((u) => u._id === userId),
+    // Then admin (if not current user)
+    ...groupUsers.filter(
+      (u) => u._id !== userId && admin && u._id === admin._id
+    ),
     ...groupUsers
-      .filter((u) => !admin || u._id !== admin._id)
+      .filter((u) => u._id !== userId && (!admin || u._id !== admin._id))
       .sort((a, b) =>
         (a.fullName || a.username).localeCompare(b.fullName || b.username)
       ),
   ];
 
   const handleLeaveGroup = async () => {
-  try {
-    
-    const res = await axios.post("http://localhost:5000/api/chat/leave", { chatId: chat._id, userId });
-    console.log("Leave group response:", res.data);
-    onHide();
-
-    // If user is no longer in the group, refresh or redirect
-    const users = res.data.chat?.users || [];
-    if (!users.some(u => u === userId || u._id === userId)) {
-      // Option 1: Reload the page (simple)
-      window.location.reload();
-
-      // Option 2: If you have a parent handler, call it:
-      // onLeftGroup && onLeftGroup(chat._id);
+    try {
+      const res = await axios.post("http://localhost:5000/api/chat/leave", {
+        chatId: chat._id,
+        userId,
+      });
+      console.log("Leave group response:", res.data);
+      onHide();
+      const users = res.data.chat?.users || [];
+      if (!users.some((u) => u === userId || u._id === userId)) {
+        window.location.reload();
+      }
+    } catch (err) {
+      console.error("Failed to leave group:", err);
     }
-  } catch (err) {
-    console.error("Failed to leave group:", err);
-    alert("Failed to leave group.");
-  }
-};
+  };
+
+  const handleRemoveMember = async (memberId) => {
+    try {
+      await axios.post("http://localhost:5000/api/chat/remove-member", {
+        chatId: chat._id,
+        memberId,
+      });
+      refreshGroupUsers();
+    } catch (err) {
+      console.error("Failed to remove member:", err);
+    }
+  };
 
   const refreshGroupUsers = () => {
-    axios
-      .get(`http://localhost:5000/api/chat/${chat._id}`)
-      .then((res) => {
-        setGroupUsers(res.data.users || []);
-        setAdmin(res.data.admin || null);
-      });
+    axios.get(`http://localhost:5000/api/chat/${chat._id}`).then((res) => {
+      setGroupUsers(res.data.users || []);
+      setAdmin(res.data.admin || null);
+    });
   };
 
   return (
@@ -153,9 +168,7 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
                   </div>
                 )}
                 <h5>{memberProfile.fullName}</h5>
-                <div className="mb-2 text-muted">
-                  @{memberProfile.username}
-                </div>
+                <div className="mb-2 text-muted">@{memberProfile.username}</div>
                 <div className="mb-2">
                   <strong>Date Joined:</strong>{" "}
                   {memberProfile.createdAt
@@ -252,7 +265,10 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
                 style={{ cursor: "pointer", color: "#dc3545" }}
               />
             </div>
-            <GroupChatSettings show={showSettings} onHide={() => setShowSettings(false)} />
+            <GroupChatSettings
+              show={showSettings}
+              onHide={() => setShowSettings(false)}
+            />
             <AddMemberModal
               show={showAddMember}
               onHide={() => setShowAddMember(false)}
@@ -286,6 +302,7 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
                         style={{
                           width: 36,
                           height: 36,
+                          minWidth: 36,
                           borderRadius: "50%",
                           border: "1.5px solid #e0e0e0",
                           background: "#fff",
@@ -297,6 +314,7 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
                         style={{
                           width: 36,
                           height: 36,
+                          minWidth: 36,
                           borderRadius: "50%",
                           background: "#e0e0e0",
                           display: "flex",
@@ -308,13 +326,38 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
                         }}
                       >
                         <span>
-                          {(member.fullName || member.username)[0].toUpperCase()}
+                          {(member.fullName ||
+                            member.username)[0].toUpperCase()}
                         </span>
                       </div>
                     )}
-                    <span style={{ flex: 1 }}>{member.fullName || member.username}</span>
+
+                    <span style={{ flex: 1 }}>
+                      {member._id === userId
+                        ? "You"
+                        : member.fullName || member.username}
+                    </span>
                     {admin && admin._id === member._id && (
-                      <StarFill color="#28a745" size={18} style={{ marginLeft: "auto" }} title="Admin" />
+                      <StarFill
+                        color="#28a745"
+                        size={18}
+                        style={{ width: "auto" }}
+                        title="Admin"
+                      />
+                    )}
+                    {/* Remove button for admin, not for themselves */}
+                    {admin && admin._id === userId && member._id !== userId && (
+                      <Button
+                        variant="outline-danger"
+                        size="sm"
+                        style={{ marginLeft: 8, width: "auto" }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveMember(member._id);
+                        }}
+                      >
+                        Remove
+                      </Button>
                     )}
                   </ListGroup.Item>
                 ))}
