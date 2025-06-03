@@ -8,7 +8,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const Settings = ({ onBack }) => {
+const Settings = ({ onBack, onGoToChat }) => {
   const { user, updateUser } = useAuth();
   if (!user) {
     return <div>Please log in to view your profile.</div>;
@@ -23,9 +23,11 @@ const Settings = ({ onBack }) => {
   });
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [myGroups, setMyGroups] = useState([]);
 
   useEffect(() => {
     fetchUser();
+    fetchGroups();
     // eslint-disable-next-line
   }, []);
 
@@ -40,45 +42,57 @@ const Settings = ({ onBack }) => {
     }
   };
 
+  const fetchGroups = async () => {
+    try {
+      const res = await axios.post("http://localhost:5000/api/chat/fetch", {
+        currentUserId,
+      });
+      // Only group chats
+      setMyGroups(res.data.filter((chat) => chat.isGroupChat));
+    } catch (err) {
+      console.error("Failed to fetch groups", err);
+    }
+  };
+
   const handleChange = (e) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
   };
 
   const handleImageChange = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  setUploading(true);
-  const fileExt = file.name.split('.').pop();
-  const filePath = `${currentUserId}.${fileExt}`; // Only user ID
+    const file = e.target.files[0];
+    if (!file) return;
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const filePath = `${currentUserId}.${fileExt}`; // Only user ID
 
-  // Delete the old file if it exists
-  const { error: deleteError } = await supabase.storage
-    .from("avatars")
-    .remove([filePath]);
-  if (deleteError && deleteError.message !== "Object not found") {
-    console.log("Supabase delete error:", deleteError);
-    alert("Failed to delete old profile photo!");
-    setUploading(false);
-    return;
-  }
+    // Delete the old file if it exists
+    const { error: deleteError } = await supabase.storage
+      .from("avatars")
+      .remove([filePath]);
+    if (deleteError && deleteError.message !== "Object not found") {
+      console.log("Supabase delete error:", deleteError);
+      alert("Failed to delete old profile photo!");
+      setUploading(false);
+      return;
+    }
 
-  // Upload the new file (upsert is optional now)
-  const { data, error } = await supabase.storage
-    .from("avatars")
-    .upload(filePath, file);
-  if (error) {
-    console.log("Supabase upload error:", error);
-    alert("Upload failed!");
+    // Upload the new file (upsert is optional now)
+    const { data, error } = await supabase.storage
+      .from("avatars")
+      .upload(filePath, file);
+    if (error) {
+      console.log("Supabase upload error:", error);
+      alert("Upload failed!");
+      setUploading(false);
+      return;
+    }
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(filePath);
+    setUserData({ ...userData, profilePhoto: publicUrlData.publicUrl });
     setUploading(false);
-    return;
-  }
-  // Get public URL
-  const { data: publicUrlData } = supabase.storage
-    .from("avatars")
-    .getPublicUrl(filePath);
-  setUserData({ ...userData, profilePhoto: publicUrlData.publicUrl });
-  setUploading(false);
-};
+  };
 
   const handleSave = async () => {
     try {
@@ -185,6 +199,56 @@ const Settings = ({ onBack }) => {
           </tr>
         </tbody>
       </table>
+      <div className="mb-4">
+        <h5>My Groups</h5>
+        {myGroups.length === 0 ? (
+          <div className="text-muted">You are not part of any groups.</div>
+        ) : (
+          <ul className="list-group">
+            {myGroups.map(group => (
+              <li
+                key={group._id}
+                className="list-group-item d-flex align-items-center"
+                style={{ cursor: "pointer" }}
+                onClick={() => onGoToChat && onGoToChat(group)}
+              >
+                {group.groupPhoto ? (
+                  <img
+                    src={group.groupPhoto}
+                    alt="Group"
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      objectFit: "cover",
+                      marginRight: 12,
+                      border: "1px solid #eee",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: "50%",
+                      background: "#e0e0e0",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      marginRight: 12,
+                      fontWeight: 600,
+                      color: "#888",
+                    }}
+                  >
+                    {group.chatName ? group.chatName[0].toUpperCase() : "G"}
+                  </div>
+                )}
+                <span>{group.chatName}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };

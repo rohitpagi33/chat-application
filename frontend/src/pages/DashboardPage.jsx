@@ -76,7 +76,13 @@ const DashboardPage = () => {
         {/* Main Area */}
         <div className="d-flex flex-grow-1">
           {showSettings ? (
-            <Settings onBack={handleCloseSettings} />
+            <Settings
+              onBack={() => setShowSettings(false)}
+              onGoToChat={(chat) => {
+                setSelectedChat(chat);
+                setShowSettings(false);
+              }}
+            />
           ) : (
             <>
               {/* Sidebar */}
