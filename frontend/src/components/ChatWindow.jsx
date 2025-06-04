@@ -16,6 +16,7 @@ import { createClient } from "@supabase/supabase-js";
 import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { formatDate, renderFile } from "../utils/chatUtils";
+import VideoCall from "./VideoCall";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
@@ -37,6 +38,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [showProfile, setShowProfile] = useState(false);
   const [profileUserId, setProfileUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showVideoCall, setShowVideoCall] = useState(false);
 
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -264,6 +266,8 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
     );
   }
 
+  const otherUser = chat.users.find((u) => u._id !== userId);
+
   return (
     <div className="d-flex flex-column h-100">
       {/* Header */}
@@ -385,6 +389,18 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
             </span>
           )}
         </div>
+
+        {/* Video Call Button - Only for 1-to-1 chats */}
+        {!chat.isGroupChat && otherUser && (
+          <Button
+            variant="outline-primary"
+            size="sm"
+            onClick={() => setShowVideoCall(true)}
+            className="ms-2"
+          >
+            Video Call
+          </Button>
+        )}
       </div>
 
       {/* Messages */}
@@ -436,6 +452,15 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           chat={chat}
           show={showProfile}
           onHide={() => setShowProfile(false)}
+        />
+      )}
+
+      {/* Video Call Component - Only for 1-to-1 chats */}
+      {!chat.isGroupChat && showVideoCall && (
+        <VideoCall
+          userId={userId}
+          remoteUserId={otherUser._id}
+          onClose={() => setShowVideoCall(false)}
         />
       )}
     </div>

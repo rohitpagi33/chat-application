@@ -109,6 +109,19 @@ io.on("connection", (socket) => {
   });
 });
 
+  // Video call signaling
+  socket.on('video-call', ({ to, offer, from }) => {
+    io.to(to).emit('video-call-offer', { offer, from });
+  });
+
+  socket.on('video-answer', ({ to, answer }) => {
+    io.to(to).emit('video-call-answer', { answer });
+  });
+
+  socket.on('ice-candidate', ({ to, candidate }) => {
+    io.to(to).emit('ice-candidate', { candidate });
+  });
+
   socket.on('disconnect', () => {
     console.log('🔴 Client disconnected:', socket.id);
   });
