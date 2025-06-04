@@ -1,6 +1,7 @@
 import React from "react";
 import { ListGroup, Badge } from "react-bootstrap";
 import { PersonCircle } from "react-bootstrap-icons";
+import { FaFileAlt, FaFileImage } from "react-icons/fa";
 
 const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
   return (
@@ -8,6 +9,8 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
       className="flex-grow-1 overflow-auto"
       style={{
         scrollbarWidth: "none",
+       // paddingTop: 28, // More space before chat list
+        paddingBottom: 28, // More space after chat list
       }}
     >
       <ListGroup
@@ -24,21 +27,40 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
             ? chat.chatName
             : otherUser?.fullName || otherUser?.username;
           let latestMessage = "No messages yet";
+          let latestMessageIcon = null;
+
+          const isActive = selectedChat?._id === chat._id;
+
           if (chat.latestMessage) {
             if (
               chat.latestMessage.messageType === "file" &&
               chat.latestMessage.file
             ) {
+              const fileName = chat.latestMessage.file.name || "file";
               if (
                 chat.latestMessage.file.type &&
                 chat.latestMessage.file.type.startsWith("image/")
               ) {
-                latestMessage = "Sent you an image";
+                latestMessageIcon = (
+                  <FaFileImage
+                    size={17}
+                    color={isActive ? "#1976d2" : "#26a69a"}
+                    style={{ marginRight: 6, verticalAlign: "middle" }}
+                  />
+                );
               } else {
-                latestMessage = "Sent you a file";
+                latestMessageIcon = (
+                  <FaFileAlt
+                    size={17}
+                    color={isActive ? "#1976d2" : "#7e57c2"}
+                    style={{ marginRight: 6, verticalAlign: "middle" }}
+                  />
+                );
               }
+              latestMessage = fileName;
             } else if (chat.latestMessage.content) {
               latestMessage = chat.latestMessage.content;
+              latestMessageIcon = null;
             }
           }
 
@@ -47,10 +69,17 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
               as="li"
               key={chat._id}
               action
-              active={selectedChat?._id === chat._id}
+              active={isActive}
               onClick={() => onSelectChat(chat)}
               className="d-flex justify-content-between align-items-start"
-              style={{ cursor: "pointer" }}
+              style={{
+                cursor: "pointer",
+                background: isActive ? "#e3f0fc" : "#fff", // Light blue for active
+                border: isActive ? "1.5px solid #1976d2" : "1.5px solid #f0f0f0",
+                color: isActive ? "#1976d2" : "#222",
+                transition: "background 0.2s, border 0.2s",
+                // No marginBottom, no borderRadius
+              }}
             >
               <div className="ms-2 me-auto d-flex">
                 <div
@@ -67,7 +96,6 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                           height: 35,
                           borderRadius: "50%",
                           marginRight: 12,
-
                           maxWidth: "35px",
                           border: "1.5px solid #e0e0e0",
                           background: "#fff",
@@ -104,22 +132,25 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                 </div>
                 <div>
                   <div className="d-flex align-items-center">
-                    <div className="fw-bold" style={{ width: "60%" }}>
+                    <div
+                      className="fw-bold"
+                      style={{
+                        width: "60%",
+                        color: isActive ? "#1976d2" : "#222",
+                      }}
+                    >
                       {chatTitle}{" "}
                     </div>
                     {chat.latestMessage?.createdAt && (
                       <div
-                        className=""
                         style={{
                           fontSize: "0.8em",
-                          color: "black",
+                          color: isActive ? "#1976d2" : "black",
                           textAlign: "right",
                           width: "40%",
                         }}
                       >
-                        {new Date(
-                          chat.latestMessage.createdAt
-                        ).toLocaleTimeString([], {
+                        {new Date(chat.latestMessage.createdAt).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
@@ -127,22 +158,24 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                     )}
                   </div>
                   <div className="d-flex">
-                    <div className="" style={{ width: "70%" }}>
+                    <div style={{ width: "70%" }}>
                       <small
-                        className="text-muted text-truncate d-block"
-                        style={{ maxWidth: "200px" }}
+                        className="text-truncate d-flex align-items-center"
+                        style={{
+                          maxWidth: "200px",
+                          color: isActive ? "#1976d2" : "#888",
+                          fontWeight: isActive ? 500 : 400,
+                        }}
                       >
+                        {latestMessageIcon}
                         {latestMessage}
                       </small>
                     </div>
-                    <div
-                      className=""
-                      style={{ width: "30%", textAlign: "right" }}
-                    >
+                    <div style={{ width: "30%", textAlign: "right" }}>
                       {/* Unread badge */}
                       {chat.unreadCount > 0 && (
                         <Badge
-                          bg="primary"
+                          bg={isActive ? "primary" : "primary"}
                           pill
                           className="align-self-center ms-2"
                         >
