@@ -149,16 +149,22 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
         <button
           onClick={startCall}
           style={{
-            marginTop: 24,
-            padding: "12px 32px",
-            fontSize: 18,
-            borderRadius: 8,
-            background: "#1976d2",
+            width: "320px",
+            padding: "14px 0",
+            fontSize: 20,
+            borderRadius: 12,
+            background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
             color: "#fff",
             border: "none",
             cursor: "pointer",
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: 1,
+            boxShadow: "0 2px 16px #1976d288",
+            marginTop: 8,
+            marginBottom: 8,
+            display: "block",
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
           Start Call
@@ -168,16 +174,22 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
         <button
           onClick={hangUp}
           style={{
-            marginTop: 24,
-            padding: "12px 32px",
-            fontSize: 18,
-            borderRadius: 8,
-            background: "#d32f2f",
+            width: "320px",
+            padding: "14px 0",
+            fontSize: 20,
+            borderRadius: 12,
+            background: "linear-gradient(90deg, #d32f2f 60%, #ff1744 100%)",
             color: "#fff",
             border: "none",
             cursor: "pointer",
-            fontWeight: 600,
+            fontWeight: 700,
             letterSpacing: 1,
+            boxShadow: "0 2px 16px #d32f2f88",
+            marginTop: 8,
+            marginBottom: 8,
+            display: "block",
+            marginLeft: "auto",
+            marginRight: "auto",
           }}
         >
           Hang Up

@@ -17,6 +17,9 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { formatDate, renderFile } from "../utils/chatUtils";
 import VideoCall from "./VideoCall";
+import VoiceCall from "./VoiceCall"; // Add this import
+import { MdVideoCall } from "react-icons/md";
+import { MdCall } from "react-icons/md";
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
@@ -24,7 +27,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const socket = io("http://localhost:5000");
 
-const ChatWindow = ({ chat, userId, onStartNewChat }) => {
+const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [messages, setMessages] = useState([]);
   const [newMsg, setNewMsg] = useState("");
   const [showStartChatModal, setShowStartChatModal] = useState(false);
@@ -39,6 +42,7 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
   const [profileUserId, setProfileUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
+  const [showVoiceCall, setShowVoiceCall] = useState(false); // Add voice call state
 
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -392,14 +396,39 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
 
         {/* Video Call Button - Only for 1-to-1 chats */}
         {!chat.isGroupChat && otherUser && (
-          <Button
-            variant="outline-primary"
-            size="sm"
-            onClick={() => setShowVideoCall(true)}
-            className="ms-2"
-          >
-            Video Call
-          </Button>
+          <>
+            <Button
+              variant="light"
+              className="ms-2 d-flex align-items-center justify-content-center"
+              style={{
+                borderRadius: "50%",
+                width: 40,
+                height: 40,
+                padding: 0,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}
+              title="Start Voice Call"
+              onClick={() => setShowVoiceCall(true)} // For future use
+              
+            >
+              <MdCall size={22} color="#1976d2" />
+            </Button>
+            <Button
+              variant="light"
+              onClick={() => setShowVideoCall(true)}
+              className="ms-2 d-flex align-items-center justify-content-center"
+              style={{
+                borderRadius: "50%",
+                width: 40,
+                height: 40,
+                padding: 0,
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)",
+              }}
+              title="Start Video Call"
+            >
+              <MdVideoCall size={24} color="#1976d2" />
+            </Button>
+          </>
         )}
       </div>
 
@@ -461,6 +490,17 @@ const ChatWindow = ({ chat, userId, onStartNewChat }) => {
           userId={userId}
           remoteUserId={otherUser._id}
           onClose={() => setShowVideoCall(false)}
+        />
+      )}
+
+      {/* Voice Call Component - Only for 1-to-1 chats */}
+      {!chat.isGroupChat && showVoiceCall && (
+        <VoiceCall
+          userId={userId}
+          remoteUserId={otherUser._id}
+          localUser={currentUserObject}      // Pass the real user object
+          remoteUser={otherUser}             // Pass the real other user object
+          onClose={() => setShowVoiceCall(false)}
         />
       )}
     </div>

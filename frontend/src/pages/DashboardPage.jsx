@@ -104,6 +104,7 @@ const DashboardPage = () => {
                 <ChatWindow
                   chat={selectedChat}
                   userId={currentUserId}
+                  currentUserObject={user} // Pass the real user object here
                   onStartNewChat={handleStartNewChat}
                 />
               </div>
