@@ -24,6 +24,7 @@ const Settings = ({ onBack, onGoToChat }) => {
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [myGroups, setMyGroups] = useState([]);
+  const [originalUserData, setOriginalUserData] = useState(null); // <-- Added state for original data
 
   useEffect(() => {
     fetchUser();
@@ -110,144 +111,305 @@ const Settings = ({ onBack, onGoToChat }) => {
     }
   };
 
+  const handleEdit = () => {
+    setOriginalUserData(userData); // Save original data
+    setEditMode(true);
+  };
+
+  const handleCancel = () => {
+    setUserData(originalUserData); // Restore original data
+    setEditMode(false);
+  };
+
   return (
-    <div className="w-100 h-100 p-4">
+    <div className="w-100 h-100 p-4" style={{ background: "#f7fafd", minHeight: "100vh" }}>
       <div className="mb-4">
-        <button className="btn btn-light" onClick={onBack}>
-          <FaArrowLeft /> Back
+        <button
+          className="d-flex align-items-center"
+          onClick={onBack}
+          style={{
+            background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 18px",
+            fontWeight: 500,
+            fontSize: 15,
+            boxShadow: "0 2px 8px #1976d288",
+            cursor: "pointer",
+            transition: "background 0.2s",
+            width: "auto",
+          }}
+        >
+          <FaArrowLeft style={{ marginRight: 8 }} /> Back
         </button>
       </div>
-      <h4>My Profile</h4>
-      <div className="mb-3 text-center">
-        {/* Show profile image or fallback */}
-        <img
-          src={
-            userData.profilePhoto ||
-            "https://ui-avatars.com/api/?name=" + encodeURIComponent(userData.fullName)
-          }
-          alt="Profile"
-          style={{
-            width: 90,
-            height: 90,
-            borderRadius: "50%",
-            border: "2px solid #eee",
-          }}
-        />
-        {editMode && (
-          <div className="mt-2">
+      <h3 className="text-center mb-4" style={{ fontWeight: 600, color: "#1976d2", letterSpacing: 1 }}>My Profile</h3>
+      <div className="mb-3 text-center" style={{ position: "relative", display: "inline-block" }}>
+        <div style={{ position: "relative", display: "inline-block" }}>
+          <img
+            src={
+              userData.profilePhoto ||
+              "https://ui-avatars.com/api/?name=" + encodeURIComponent(userData.fullName)
+            }
+            alt="Profile"
+            style={{
+              width: 90,
+              height: 90,
+              borderRadius: "50%",
+              border: "2px solid #1976d2",
+              objectFit: "cover",
+              marginBottom: 10,
+              boxShadow: "0 2px 8px #1976d288",
+            }}
+          />
+          {editMode && (
+            <label
+              htmlFor="profile-photo-input"
+              style={{
+                position: "absolute",
+                top: 50,
+                left: 650,
+                background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
+                color: "#fff",
+                borderRadius: "50%",
+                width: 32,
+                height: 32,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                boxShadow: "0 2px 8px #1976d288",
+                border: "2px solid #fff",
+                zIndex: 10,
+              }}
+              title="Change profile photo"
+            >
+              <FaEdit size={15} />
+              <input
+                id="profile-photo-input"
+                type="file"
+                accept="image/*"
+                onChange={handleImageChange}
+                disabled={uploading}
+                style={{
+                  opacity: 0,
+                  position: "absolute",
+                  left: 0,
+                  top: 0,
+                  width: "100%",
+                  height: "100%",
+                  cursor: "pointer",
+                }}
+              />
+            </label>
+          )}
+        </div>
+        {uploading && <div style={{ fontSize: 13, color: "#888", marginTop: 4 }}>Uploading...</div>}
+        <div className="mt-2" style={{ fontWeight: 500, fontSize: 19, color: "#222", letterSpacing: 0.5 }}>
+          {editMode ? (
             <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              disabled={uploading}
+              type="text"
+              name="fullName"
+              value={userData.fullName}
+              onChange={handleChange}
+              style={{
+                fontSize: 17,
+                fontWeight: 500,
+                border: "1.5px solid #c7e0fa",
+                borderRadius: 8,
+                padding: "6px 12px",
+                width: 240,
+                marginBottom: 4,
+                background: "#fafdff",
+                outline: "none",
+                transition: "border 0.2s",
+                boxShadow: "0 1px 4px #1976d211",
+              }}
+              placeholder={originalUserData ? originalUserData.fullName : userData.fullName}
+              autoFocus
+              onFocus={e => (e.target.style.border = "1.5px solid #1976d2")}
+              onBlur={e => (e.target.style.border = "1.5px solid #c7e0fa")}
             />
-            {uploading && <div>Uploading...</div>}
-          </div>
+          ) : (
+            userData.fullName
+          )}
+        </div>
+        <div style={{ color: "#666", fontSize: 14, fontWeight: 400 }}>
+          {editMode ? (
+            <input
+              type="email"
+              name="email"
+              value={userData.email}
+              onChange={handleChange}
+              style={{
+                fontSize: 14,
+                fontWeight: 400,
+                border: "1.5px solid #c7e0fa",
+                borderRadius: 8,
+                padding: "6px 12px",
+                width: 240,
+                background: "#fafdff",
+                outline: "none",
+                transition: "border 0.2s",
+                boxShadow: "0 1px 4px #1976d211",
+              }}
+              placeholder={originalUserData ? originalUserData.email : userData.email}
+              onFocus={e => (e.target.style.border = "1.5px solid #1976d2")}
+              onBlur={e => (e.target.style.border = "1.5px solid #c7e0fa")}
+            />
+          ) : (
+            userData.email
+          )}
+        </div>
+        <div style={{ color: "#888", fontSize: 14, fontWeight: 400 }}>
+          @{userData.username}
+        </div>
+      </div>
+      <div className="d-flex justify-content-center mb-4">
+        {editMode ? (
+          <>
+            <button
+              className="btn"
+              onClick={handleSave}
+              disabled={uploading}
+              style={{
+                background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
+                color: "#fff",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 18px",
+                fontWeight: 500,
+                fontSize: 15,
+                boxShadow: "0 2px 8px #1976d288",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                width: "auto",
+                marginRight: 8,
+              }}
+            >
+              <FaSave /> Save
+            </button>
+            <button
+              className="btn"
+              onClick={handleCancel}
+              style={{
+                background: "#e0e0e0",
+                color: "#1976d2",
+                border: "none",
+                borderRadius: 8,
+                padding: "8px 18px",
+                fontWeight: 500,
+                fontSize: 15,
+                boxShadow: "0 2px 8px #1976d211",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                width: "auto",
+              }}
+            >
+              Cancel
+            </button>
+          </>
+        ) : (
+          <button
+            className="btn"
+            onClick={handleEdit}
+            style={{
+              background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 8,
+              padding: "8px 18px",
+              fontWeight: 500,
+              fontSize: 15,
+              boxShadow: "0 2px 8px #1976d288",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              width: "auto",
+            }}
+          >
+            <FaEdit /> Edit
+          </button>
         )}
       </div>
-      <table className="table">
-        <tbody>
-          <tr>
-            <th>Full Name</th>
-            <td>
-              {editMode ? (
-                <input
-                  name="fullName"
-                  value={userData.fullName}
-                  onChange={handleChange}
-                  style={{ width: "auto" }}
-                />
-              ) : (
-                userData.fullName
-              )}
-            </td>
-          </tr>
-          <tr>
-            <th>Email</th>
-            <td>
-              {editMode ? (
-                <input
-                  name="email"
-                  value={userData.email}
-                  onChange={handleChange}
-                />
-              ) : (
-                userData.email
-              )}
-            </td>
-          </tr>
-          <tr>
-            <th>Username</th>
-            <td>{userData.username}</td>
-          </tr>
-          <tr>
-            <th>Edit</th>
-            <td>
-              {editMode ? (
-                <button className="btn btn-success btn-sm" onClick={handleSave} disabled={uploading}>
-                  <FaSave />
-                </button>
-              ) : (
-                <button
-                  className="btn btn-primary btn-sm"
-                  onClick={() => setEditMode(true)}
+      <div className="d-flex" style={{ maxWidth: 900, margin: "0 auto" }}>
+        {/* Left: My Groups */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h5 style={{ fontWeight: 600, color: "#1976d2", letterSpacing: 0.5 }}>My Groups</h5>
+          {myGroups.length === 0 ? (
+            <div className="text-muted" style={{ fontSize: 15 }}>You are not part of any groups.</div>
+          ) : (
+            <ul className="list-group">
+              {myGroups.map(group => (
+                <li
+                  key={group._id}
+                  className="list-group-item d-flex align-items-center"
+                  style={{
+                    cursor: "pointer",
+                    border: "none",
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    boxShadow: "0 1px 6px #1976d222",
+                    background: "#fff",
+                    fontWeight: 500,
+                    fontSize: 15,
+                  }}
+                  onClick={() => onGoToChat && onGoToChat(group)}
                 >
-                  <FaEdit />
-                </button>
-              )}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <div className="mb-4">
-        <h5>My Groups</h5>
-        {myGroups.length === 0 ? (
-          <div className="text-muted">You are not part of any groups.</div>
-        ) : (
-          <ul className="list-group">
-            {myGroups.map(group => (
-              <li
-                key={group._id}
-                className="list-group-item d-flex align-items-center"
-                style={{ cursor: "pointer" }}
-                onClick={() => onGoToChat && onGoToChat(group)}
-              >
-                {group.groupPhoto ? (
-                  <img
-                    src={group.groupPhoto}
-                    alt="Group"
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      objectFit: "cover",
-                      marginRight: 12,
-                      border: "1px solid #eee",
-                    }}
-                  />
-                ) : (
-                  <div
-                    style={{
-                      width: 32,
-                      height: 32,
-                      borderRadius: "50%",
-                      background: "#e0e0e0",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      marginRight: 12,
-                      fontWeight: 600,
-                      color: "#888",
-                    }}
-                  >
-                    {group.chatName ? group.chatName[0].toUpperCase() : "G"}
-                  </div>
-                )}
-                <span>{group.chatName}</span>
-              </li>
-            ))}
-          </ul>
-        )}
+                  {group.groupPhoto ? (
+                    <img
+                      src={group.groupPhoto}
+                      alt="Group"
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        objectFit: "cover",
+                        marginRight: 12,
+                        border: "2px solid #1976d2",
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        background: "#e0e0e0",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        marginRight: 12,
+                        fontWeight: 700,
+                        color: "#1976d2",
+                        fontSize: 16,
+                      }}
+                    >
+                      {group.chatName ? group.chatName[0].toUpperCase() : "G"}
+                    </div>
+                  )}
+                  <span>{group.chatName}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        {/* Divider */}
+        <div style={{
+          width: 1,
+          background: "#e0e0e0",
+          margin: "0 32px",
+          minHeight: 180,
+          alignSelf: "stretch"
+        }} />
+        {/* Right: Placeholder for future section */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h5 style={{ fontWeight: 600, color: "#1976d2", letterSpacing: 0.5 }}>Other</h5>
+          <div className="text-muted" style={{ fontSize: 15 }}>Coming soon...</div>
+        </div>
       </div>
     </div>
   );
