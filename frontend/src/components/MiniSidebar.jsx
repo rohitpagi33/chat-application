@@ -3,7 +3,11 @@ import { FaCog, FaUsers } from "react-icons/fa";
 import { OverlayTrigger, Tooltip } from "react-bootstrap";
 import GroupChatModal from "./GroupChatModal";
 import axios from "axios";
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
   const [showGroupModal, setShowGroupModal] = useState(false);
 
@@ -31,7 +35,7 @@ const MiniSidebar = ({ usersList, onOpenSettings, onGroupCreated }) => {
       }
 
       await axios.post(
-        "http://localhost:5000/api/chat/group",
+        "${API_BASE_URL}/api/chat/group",
         {
           chatName: groupName,
           users: userIds,

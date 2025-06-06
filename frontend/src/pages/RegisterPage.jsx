@@ -3,7 +3,11 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import '../assets/css/styles.css';
 import 'remixicon/fonts/remixicon.css';
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
@@ -18,7 +22,7 @@ const RegisterPage = () => {
 
   const handleSendOtp = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/send-otp', { mobile: form.mobile });
+      await axios.post('${API_BASE_URL}/api/auth/send-otp', { mobile: form.mobile });
       setMessage('OTP sent to mobile');
       setStep(2);
     } catch (err) {
@@ -28,7 +32,7 @@ const RegisterPage = () => {
 
   const handleVerifyAndRegister = async () => {
     try {
-      await axios.post('http://localhost:5000/api/auth/register', { ...form, otp });
+      await axios.post('${API_BASE_URL}/api/auth/register', { ...form, otp });
       setMessage('Registration successful!');
       setStep(3);
     } catch (err) {

@@ -7,7 +7,11 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const Settings = ({ onBack, onGoToChat }) => {
   const { user, updateUser } = useAuth();
   if (!user) {
@@ -35,7 +39,7 @@ const Settings = ({ onBack, onGoToChat }) => {
   const fetchUser = async () => {
     try {
       const res = await axios.get(
-        `http://localhost:5000/api/user/${currentUserId}`
+        `${API_BASE_URL}/api/user/${currentUserId}`
       );
       setUserData(res.data);
     } catch (err) {
@@ -45,7 +49,7 @@ const Settings = ({ onBack, onGoToChat }) => {
 
   const fetchGroups = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/chat/fetch", {
+      const res = await axios.post("${API_BASE_URL}/api/chat/fetch", {
         currentUserId,
       });
       // Only group chats
@@ -97,7 +101,7 @@ const Settings = ({ onBack, onGoToChat }) => {
 
   const handleSave = async () => {
     try {
-      const res = await axios.put(`http://localhost:5000/api/user/${user._id}`, {
+      const res = await axios.put(`${API_BASE_URL}/api/user/${user._id}`, {
         fullName: userData.fullName,
         email: userData.email,
         profilePhoto: userData.profilePhoto, // <-- Save photo URL

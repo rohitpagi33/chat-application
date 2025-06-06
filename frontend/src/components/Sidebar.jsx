@@ -2,7 +2,11 @@ import React from "react";
 import { ListGroup, Badge } from "react-bootstrap";
 import { PersonCircle } from "react-bootstrap-icons";
 import { FaFileAlt, FaFileImage } from "react-icons/fa";
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
   return (
     <div

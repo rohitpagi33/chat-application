@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, ListGroup, Spinner } from "react-bootstrap";
 import axios from "axios";
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }) => {
   const [search, setSearch] = useState("");
   const [results, setResults] = useState([]);
@@ -17,7 +21,7 @@ const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }
     setLoading(true);
     const timeout = setTimeout(() => {
       axios
-        .post("http://localhost:5000/api/user/search", { search })
+        .post("${API_BASE_URL}/api/user/search", { search })
         .then(res => {
           setResults(res.data.filter(u => !currentMembers.some(m => m._id === u._id)));
         })
@@ -31,7 +35,7 @@ const AddMemberModal = ({ show, onHide, chatId, currentMembers, onMembersAdded }
   const handleAdd = async (userId) => {
     setAdding(true);
     try {
-      await axios.post("http://localhost:5000/api/chat/add", { chatId, userId });
+      await axios.post("${API_BASE_URL}/api/chat/add", { chatId, userId });
       onMembersAdded();
       onHide();
     } catch {

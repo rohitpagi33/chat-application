@@ -20,12 +20,18 @@ import VideoCall from "./VideoCall";
 import VoiceCall from "./VoiceCall"; // Add this import
 import { MdVideoCall } from "react-icons/md";
 import { MdCall } from "react-icons/md";
+import StartChatModal from "./StartChatModal";
 
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const socket = io("http://localhost:5000");
+const socket = io("${API_BASE_URL}");
 
 const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [messages, setMessages] = useState([]);
@@ -106,7 +112,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     try {
       setLoadingMessages(true);
       const res = await axios.get(
-        `http://localhost:5000/api/messages/${chatId}`
+        `${API_BASE_URL}/api/messages/${chatId}`
       );
       setMessages(res.data);
       scrollToBottom();
@@ -182,7 +188,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     if (!searchTerm.trim()) return;
     try {
       setSearching(true);
-      const res = await axios.post("http://localhost:5000/api/user/search", {
+      const res = await axios.post("${API_BASE_URL}/api/user/search", {
         search: searchTerm.trim(),
       });
       setSearchResults(res.data.filter((u) => u._id !== userId));
@@ -198,7 +204,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     const currentUserId = userData._id;
     const currentotherUserId = otherUserId._id;
     try {
-      const res = await axios.post("http://localhost:5000/api/chat/create", {
+      const res = await axios.post("${API_BASE_URL}/api/chat/create", {
         currentUserId,
         currentotherUserId,
       });
@@ -214,7 +220,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
 
   const handleDeleteMessage = async (msgId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/messages/${msgId}`, {
+      await axios.delete(`${API_BASE_URL}/api/messages/${msgId}`, {
         data: { userId },
       });
       setMessages((prev) => prev.filter((m) => m._id !== msgId));

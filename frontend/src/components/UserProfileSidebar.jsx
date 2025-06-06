@@ -1,7 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { Offcanvas, Spinner } from "react-bootstrap";
 import axios from "axios";
+// At the top of your file
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
+// Use it like this:
+const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -11,7 +15,7 @@ const UserProfileSidebar = ({ userId, chat, show, onHide }) => {
     if (show && userId && (!chat || !chat.isGroupChat)) {
       setLoading(true);
       axios
-        .get(`http://localhost:5000/api/user/${userId}`)
+        .get(`${API_BASE_URL}/api/user/${userId}`)
         .then((res) => setUser(res.data))
         .catch(() => setUser(null))
         .finally(() => setLoading(false));
