@@ -20,13 +20,9 @@ import VideoCall from "./VideoCall";
 import VoiceCall from "./VoiceCall"; // Add this import
 import { MdVideoCall } from "react-icons/md";
 import { MdCall } from "react-icons/md";
-import StartChatModal from "./StartChatModal";
-
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Use it like this:
-const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
@@ -261,17 +257,6 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         >
           Start New Chat
         </Button>
-
-        <StartChatModal
-          show={showStartChatModal}
-          onHide={() => setShowStartChatModal(false)}
-          searchTerm={searchTerm}
-          setSearchTerm={setSearchTerm}
-          onSearch={handleSearch}
-          searchResults={searchResults}
-          onCreateChat={handleCreateChat}
-          searching={searching}
-        />
       </div>
     );
   }
@@ -510,59 +495,6 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         />
       )}
     </div>
-  );
-};
-
-const StartChatModal = ({
-  show,
-  onHide,
-  searchTerm,
-  setSearchTerm,
-  onSearch,
-  searchResults,
-  onCreateChat,
-  searching,
-}) => {
-  return (
-    <Modal show={show} onHide={onHide} centered>
-      <Modal.Header closeButton>
-        <Modal.Title>Start New Chat</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        <InputGroup className="mb-3">
-          <FormControl
-            className="mb-3"
-            placeholder="Search users by name or username"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && onSearch(searchTerm)}
-          />
-          <Button onClick={() => onSearch(searchTerm)}>Search</Button>
-        </InputGroup>
-
-        {searching ? (
-          <div className="d-flex justify-content-center">
-            <Spinner animation="border" size="sm" />
-          </div>
-        ) : (
-          <ListGroup>
-            {searchResults.length === 0 && (
-              <p className="text-muted">No users found</p>
-            )}
-            {searchResults.map((user) => (
-              <ListGroup.Item
-                key={user._id}
-                action
-                onClick={() => onCreateChat(user)}
-                className="hover-shadow"
-              >
-                {user.fullName || user.username}
-              </ListGroup.Item>
-            ))}
-          </ListGroup>
-        )}
-      </Modal.Body>
-    </Modal>
   );
 };
 

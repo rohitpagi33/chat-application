@@ -10,8 +10,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // At the top of your file
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Use it like this:
-const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const Settings = ({ onBack, onGoToChat }) => {
   const { user, updateUser } = useAuth();
   if (!user) {
@@ -49,7 +47,7 @@ const Settings = ({ onBack, onGoToChat }) => {
 
   const fetchGroups = async () => {
     try {
-      const res = await axios.post("${API_BASE_URL}/api/chat/fetch", {
+      const res = await axios.post(`${API_BASE_URL}/api/chat/fetch`, {
         currentUserId,
       });
       // Only group chats

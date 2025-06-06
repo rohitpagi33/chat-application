@@ -10,8 +10,6 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // At the top of your file
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Use it like this:
-const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
   const [groupName, setGroupName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState([]);
@@ -38,7 +36,7 @@ const GroupChatModal = ({ show, onClose, onCreateGroup, currentUserId }) => {
     try {
       setLoading(true);
       const res = await axios.post(
-        "${API_BASE_URL}/api/user/search",
+        `${API_BASE_URL}/api/user/search`,
         { search: searchTerm }
       );
       // Filter out current user and already selected users

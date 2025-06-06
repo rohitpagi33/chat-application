@@ -3,11 +3,9 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import '../assets/css/styles.css';
 import 'remixicon/fonts/remixicon.css';
-// At the top of your file
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Use it like this:
-const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const RegisterPage = () => {
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({

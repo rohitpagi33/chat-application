@@ -12,8 +12,6 @@ import AddMemberModal from "./AddMemberModal";
 // At the top of your file
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// Use it like this:
-const res = await axios.post(`${API_BASE_URL}/chat/fetch`, { currentUserId });
 const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
   const [groupUsers, setGroupUsers] = useState([]);
   const [admin, setAdmin] = useState(null);
@@ -75,7 +73,7 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
 
   const handleLeaveGroup = async () => {
     try {
-      const res = await axios.post("${API_BASE_URL}/api/chat/leave", {
+      const res = await axios.post(`${API_BASE_URL}/api/chat/leave`, {
         chatId: chat._id,
         userId,
       });
@@ -92,7 +90,7 @@ const GroupProfileSidebar = ({ userId, chat, show, onHide }) => {
 
   const handleRemoveMember = async (memberId) => {
     try {
-      await axios.post("${API_BASE_URL}/api/chat/remove-member", {
+      await axios.post(`${API_BASE_URL}/api/chat/remove-member`, {
         chatId: chat._id,
         memberId,
       });
