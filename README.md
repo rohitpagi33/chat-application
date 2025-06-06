@@ -85,7 +85,7 @@ npm start
   The frontend uses an environment variable (`VITE_API_BASE_URL`) for API endpoints.  
   Change it in `frontend/.env` to switch environments easily.
 
-- **Frontend:** Runs on [http://localhost:3000](http://localhost:3000)  
+- **Frontend:** Runs on [http://localhost:5173](http://localhost:5137)  
 - **Backend:** Runs on [http://localhost:5000](http://localhost:5000)
 
 ---
@@ -101,5 +101,3 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 This project is [MIT](LICENSE) licensed.
 
 ---
-
-**Made with ❤️ by [Your Name or Team]**
