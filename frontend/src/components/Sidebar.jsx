@@ -10,15 +10,20 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
     <div
       className="flex-grow-1 overflow-auto"
       style={{
+        background: "#fafdff",
+        //borderRadius: 18,
+        boxShadow: "0 4px 18px #1976d211",
+        padding: "18px 0 18px 0",
+        //margin: "8px",
+        minWidth: 280,
+        maxWidth: 340,
         scrollbarWidth: "none",
-       // paddingTop: 28, // More space before chat list
-        paddingBottom: 28, // More space after chat list
       }}
     >
       <ListGroup
         as="ol"
         className="h-100 rounded-0"
-        style={{ maxHeight: "100vh" }}
+        style={{ maxHeight: "calc(100vh - 36px)", border: "none" }}
       >
         {chats.length === 0 && (
           <div className="p-3 text-center text-muted">No chats yet</div>
@@ -76,11 +81,26 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
               className="d-flex justify-content-between align-items-start"
               style={{
                 cursor: "pointer",
-                background: isActive ? "#e3f0fc" : "#fff", // Light blue for active
-                border: isActive ? "1.5px solid #1976d2" : "1.5px solid #f0f0f0",
+                background: isActive
+                  ? "linear-gradient(90deg, #e3f0fc 60%, #fafdff 100%)"
+                  : "#fff",
+                border: isActive ? "2px solid #1976d2" : "2px solid #f0f0f0",
                 color: isActive ? "#1976d2" : "#222",
                 transition: "background 0.2s, border 0.2s",
-                // No marginBottom, no borderRadius
+                //marginBottom: 8,
+                //borderRadius: 12,
+                boxShadow: isActive
+                  ? "0 2px 8px #1976d288"
+                  : "0 1px 4px #1976d211",
+                padding: "12px 18px",
+                minHeight: 68,
+                fontFamily: "inherit",
+              }}
+              onMouseOver={(e) => {
+                if (!isActive) e.currentTarget.style.background = "#f3f7fb";
+              }}
+              onMouseOut={(e) => {
+                if (!isActive) e.currentTarget.style.background = "#fff";
               }}
             >
               <div className="ms-2 me-auto d-flex">
@@ -94,18 +114,19 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                         src={chat.groupPhoto}
                         alt="Group"
                         style={{
-                          width: 35,
-                          height: 35,
+                          width: 40,
+                          height: 40,
                           borderRadius: "50%",
-                          marginRight: 12,
-                          maxWidth: "35px",
-                          border: "1.5px solid #e0e0e0",
+                          marginRight: 14,
+                          border: "2px solid #1976d2",
+                          boxShadow: "0 2px 8px #1976d288",
                           background: "#fff",
+                          objectFit: "cover",
                         }}
                       />
                     ) : (
                       <PersonCircle
-                        size={35}
+                        size={40}
                         className="me-2 text-secondary"
                         style={{ width: "auto" }}
                       />
@@ -115,41 +136,46 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                       src={otherUser.profilePhoto}
                       alt="Profile"
                       style={{
-                        width: 35,
-                        height: 35,
+                        width: 40,
+                        height: 40,
                         borderRadius: "50%",
-                        marginRight: 12,
-                        maxWidth: "35px",
-                        border: "1.5px solid #e0e0e0",
+                        marginRight: 14,
+                        border: "2px solid #1976d2",
+                        boxShadow: "0 2px 8px #1976d288",
                         background: "#fff",
+                        objectFit: "cover",
                       }}
                     />
                   ) : (
                     <PersonCircle
-                      size={35}
+                      size={40}
                       className="me-2 text-secondary"
                       style={{ width: "auto" }}
                     />
                   )}
                 </div>
                 <div>
-                  <div className="d-flex align-items-center">
+                  <div className="d-flex align-items-center" style={{ gap: 8 }}>
                     <div
-                      className="fw-bold"
+                      className="fw-bold text-truncate"
                       style={{
-                        width: "60%",
+                        maxWidth: 120,
                         color: isActive ? "#1976d2" : "#222",
+                        fontSize: 16,
+                        fontWeight: 600,
+                        letterSpacing: 0.2,
                       }}
                     >
-                      {chatTitle}{" "}
+                      {chatTitle}
                     </div>
                     {chat.latestMessage?.createdAt && (
                       <div
                         style={{
-                          fontSize: "0.8em",
-                          color: isActive ? "#1976d2" : "black",
+                          fontSize: "0.85em",
+                          color: isActive ? "#1976d2" : "#888",
                           textAlign: "right",
-                          width: "40%",
+                          minWidth: 60,
+                          fontWeight: 500,
                         }}
                       >
                         {new Date(chat.latestMessage.createdAt).toLocaleTimeString([], {
@@ -159,27 +185,36 @@ const Sidebar = ({ chats, selectedChat, onSelectChat, userId }) => {
                       </div>
                     )}
                   </div>
-                  <div className="d-flex">
-                    <div style={{ width: "70%" }}>
+                  <div className="d-flex" style={{ gap: 6 }}>
+                    <div style={{ maxWidth: 140 }}>
                       <small
                         className="text-truncate d-flex align-items-center"
                         style={{
-                          maxWidth: "200px",
                           color: isActive ? "#1976d2" : "#888",
                           fontWeight: isActive ? 500 : 400,
+                          fontSize: 14,
+                          letterSpacing: 0.1,
+                          maxWidth: 140,
                         }}
                       >
                         {latestMessageIcon}
                         {latestMessage}
                       </small>
                     </div>
-                    <div style={{ width: "30%", textAlign: "right" }}>
+                    <div style={{ minWidth: 30, textAlign: "right" }}>
                       {/* Unread badge */}
                       {chat.unreadCount > 0 && (
                         <Badge
                           bg={isActive ? "primary" : "primary"}
                           pill
                           className="align-self-center ms-2"
+                          style={{
+                            fontSize: 13,
+                            fontWeight: 600,
+                            background: isActive ? "#1976d2" : "#00eaff",
+                            color: "#fff",
+                            boxShadow: "0 2px 8px #1976d288",
+                          }}
                         >
                           {chat.unreadCount}
                         </Badge>
