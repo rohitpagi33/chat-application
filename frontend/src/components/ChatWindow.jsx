@@ -27,7 +27,7 @@ const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-const socket = io('http://localhost:5000');
+const socket = io('https://chat-application-one-sigma-27.vercel.app/');
 
 const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [messages, setMessages] = useState([]);
