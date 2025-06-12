@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:5000/api';  // Backend REST API
-// Socket.IO will be used separately in components with 'http://localhost:8000'
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+const API_BASE_URL = `${API_BASE}/api`;
 
 const axiosClient = axios.create({
   baseURL: API_BASE_URL,

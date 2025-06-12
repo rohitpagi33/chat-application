@@ -1,5 +1,4 @@
-// models/Message.js
-const mongoose = require('mongoose');
+import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema({
   sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
@@ -16,4 +15,6 @@ const messageSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.models.Message || mongoose.model('Message', messageSchema);
+
+const Message = mongoose.model("Message", messageSchema);
+export default Message;

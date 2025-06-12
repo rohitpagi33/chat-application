@@ -1,12 +1,7 @@
-// backend/routes/authRoutes.js
-const express = require('express');
+import express from 'express';
+import { sendOTP, registerUser, loginRequest, verifyLoginOTP } from '../controllers/authController.js';
+
 const router = express.Router();
-const {
-  sendOTP,
-  registerUser,
-  loginRequest,
-  verifyLoginOTP
-} = require('../controllers/authController');
 
 router.post('/send-otp', sendOTP);             // For registration
 router.post('/register', registerUser);        // Registration after OTP
@@ -14,4 +9,4 @@ router.post('/register', registerUser);        // Registration after OTP
 router.post('/login-request', loginRequest);   // Login: send OTP
 router.post('/login-verify', verifyLoginOTP);  // Login: verify OTP
 
-module.exports = router;
+export default router;

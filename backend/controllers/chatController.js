@@ -1,7 +1,7 @@
-const Chat = require("../models/Chat");
-const User = require("../models/User");
-const Message = require("../models/Message");
-const mongoose = require("mongoose");
+import Chat from "../models/Chat.js";
+import User from "../models/User.js";
+import Message from "../models/Message.js";
+import mongoose from "mongoose";
 
 const createChat = async (req, res) => {
   try {
@@ -164,7 +164,6 @@ const getChatById = async (req, res) => {
     res.status(500).json({ message: "Failed to fetch chat" });
   }
 };
-
 const addMemberToGroup = async (req, res) => {
   const { chatId, userId } = req.body; // <-- get both from body
   try {
@@ -240,4 +239,12 @@ const removeMemberFromGroup = async (req, res) => {
   }
 };
 
-module.exports = { createChat, fetchChat, createGroupChat, getChatById, addMemberToGroup, leaveGroupChat, removeMemberFromGroup };
+export {
+  createChat,
+  fetchChat,
+  createGroupChat,
+  getChatById,
+  addMemberToGroup,
+  leaveGroupChat,
+  removeMemberFromGroup,
+};

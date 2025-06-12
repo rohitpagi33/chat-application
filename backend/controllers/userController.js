@@ -1,7 +1,6 @@
-const { get } = require('mongoose');
-const User = require('../models/User');  // << This is required!
+import User from '../models/User.js';
 
-const searchUsers = async (req, res) => {
+export const searchUsers = async (req, res) => {
   const { search } = req.body;
 
   if (!search) {
@@ -22,7 +21,7 @@ const searchUsers = async (req, res) => {
   }
 };
 
-const updateUser = async (req, res) => {
+export const updateUser = async (req, res) => {
   try {
     const { fullName, email, profilePhoto } = req.body;
     const user = await User.findByIdAndUpdate(
@@ -37,15 +36,11 @@ const updateUser = async (req, res) => {
 };
 
 
-const getUserById = async (req, res) => {
+export const getUserById = async (req, res) => {
   try {
     const user = await User.findById(req.params.id, '-__v');
     res.json(user);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch user' });
   }
-};
-
-module.exports = {
-  searchUsers, updateUser, getUserById
 };

@@ -23,11 +23,9 @@ import { MdCall } from "react-icons/md";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY);
 
-const socket = io('https://chat-application-one-sigma-27.vercel.app/');
+const socket = io(import.meta.env.VITE_SOCKET_URL);
 
 const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [messages, setMessages] = useState([]);
@@ -184,7 +182,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     if (!searchTerm.trim()) return;
     try {
       setSearching(true);
-      const res = await axios.post("${API_BASE_URL}/api/user/search", {
+      const res = await axios.post(`${API_BASE_URL}/api/user/search`, {
         search: searchTerm.trim(),
       });
       setSearchResults(res.data.filter((u) => u._id !== userId));
@@ -200,7 +198,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     const currentUserId = userData._id;
     const currentotherUserId = otherUserId._id;
     try {
-      const res = await axios.post("${API_BASE_URL}/api/chat/create", {
+      const res = await axios.post(`${API_BASE_URL}/api/chat/create`, {
         currentUserId,
         currentotherUserId,
       });
@@ -257,6 +255,17 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         >
           Start New Chat
         </Button>
+        <StartChatModal
+          show={showStartChatModal}
+          onHide={() => setShowStartChatModal(false)}
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          onSearch={handleSearch}
+          searchResults={searchResults}
+          setSearchResults={setSearchResults}
+          onCreateChat={handleCreateChat}
+          searching={searching}
+        />
       </div>
     );
   }
@@ -495,6 +504,81 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         />
       )}
     </div>
+  );
+};
+
+
+const StartChatModal = ({
+  show,
+  onHide,
+  searchTerm,
+  setSearchTerm,
+  onSearch,
+  searchResults,
+  setSearchResults,
+  onCreateChat,
+  searching,
+}) => {
+  const debounceTimeout = useRef(null);
+
+  useEffect(() => {
+    // Auto-search after user stops typing for 400ms
+    if (!searchTerm.trim()) {
+      onSearch("");
+      setSearchResults([]);
+      return;
+    }
+
+    clearTimeout(debounceTimeout.current);
+    debounceTimeout.current = setTimeout(() => {
+      onSearch(searchTerm);
+    }, 400);
+
+    return () => clearTimeout(debounceTimeout.current);
+  }, [searchTerm]);
+
+  const handleClose = () => {
+    setSearchTerm("");
+    setSearchResults([]);
+    onHide();
+  };
+
+  return (
+    <Modal show={show} onHide={handleClose} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Start New Chat</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <InputGroup className="mb-3">
+          <FormControl
+            placeholder="Search users by name or username"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </InputGroup>
+
+        {searching ? (
+          <div className="d-flex justify-content-center">
+            <Spinner animation="border" size="sm" />
+          </div>
+        ) : (
+          <ListGroup>
+            {searchResults.length === 0 && (
+              <p className="text-muted">No users found</p>
+            )}
+            {searchResults.map((user) => (
+              <ListGroup.Item
+                key={user._id}
+                action
+                onClick={() => onCreateChat(user)}
+              >
+                {user.fullName || user.username}
+              </ListGroup.Item>
+            ))}
+          </ListGroup>
+        )}
+      </Modal.Body>
+    </Modal>
   );
 };
 

@@ -20,7 +20,7 @@ const LoginPage = () => {
 
   const handleSendOtp = async () => {
     try {
-      await axios.post('${API_BASE_URL}/api/auth/login-request', { identifier });
+      await axios.post(`${API_BASE_URL}/api/auth/login-request`, { identifier });
       setMessage('OTP sent to your registered mobile');
       setStep(2);
     } catch (err) {
@@ -31,7 +31,7 @@ const LoginPage = () => {
 
 const handleVerifyOtp = async () => {
   try {
-    const res = await axios.post('${API_BASE_URL}/api/auth/login-verify', { identifier, otp });
+    const res = await axios.post(`${API_BASE_URL}/api/auth/login-verify`, { identifier, otp });
     login(res.data.user, res.data.token); // Save token
     setMessage('Login successful!');
     navigate('/dashboard');

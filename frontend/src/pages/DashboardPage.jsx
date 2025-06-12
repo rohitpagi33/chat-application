@@ -4,7 +4,10 @@ import axios from "axios";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import MiniSidebar from "../components/MiniSidebar";
-import Settings from "../components/Settings"; // <-- Import Settings
+import Settings from "../components/Settings";
+
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const DashboardPage = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -19,7 +22,7 @@ const DashboardPage = () => {
   // Fetch chats for the current user
   const fetchChats = async () => {
     try {
-      const res = await axios.post("http://localhost:5000/api/chat/fetch", {
+      const res = await axios.post(`${API_BASE_URL}/api/chat/fetch`, {
         currentUserId,
       });
       setChats(res.data);
