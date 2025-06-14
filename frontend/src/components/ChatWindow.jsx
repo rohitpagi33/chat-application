@@ -23,7 +23,10 @@ import { MdCall } from "react-icons/md";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const supabase = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_KEY);
+const supabase = createClient(
+  import.meta.env.VITE_SUPABASE_URL,
+  import.meta.env.VITE_SUPABASE_KEY
+);
 
 const socket = io(import.meta.env.VITE_SOCKET_URL);
 
@@ -42,7 +45,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [profileUserId, setProfileUserId] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showVideoCall, setShowVideoCall] = useState(false);
-  const [showVoiceCall, setShowVoiceCall] = useState(false); // Add voice call state
+  const [showVoiceCall, setShowVoiceCall] = useState(false);
 
   const [contextMenu, setContextMenu] = useState({
     visible: false,
@@ -51,11 +54,15 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     msgId: null,
   });
 
-  // File upload state
   const fileInputRef = useRef();
   const [uploading, setUploading] = useState(false);
 
+  const [incomingVideoCall, setIncomingVideoCall] = useState(null);
+
   useEffect(() => {
+    if (userId) {
+      socket.emit("register", userId);
+    }
     if (chat?._id) {
       socket.emit("user-online", userId);
       fetchMessages(chat._id);
@@ -64,6 +71,18 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
 
       socket.on("update-online-users", (users) => {
         setOnlineUsers(users);
+      });
+
+      socket.on("video-call-offer", ({ from, caller }) => {
+        console.log("📞 Incoming call from", caller?.fullName || from);
+        if (chat.users.some((u) => u._id === from)) {
+          setIncomingVideoCall({ from, caller });
+        }
+      });
+
+      socket.on("call-rejected", () => {
+        alert("Call rejected");
+        setShowVideoCall(false);
       });
 
       socket.on("receive-message", (msg) => {
@@ -91,11 +110,12 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
       socket.off("receive-message");
       socket.off("messages-read");
       socket.off("update-online-users");
+      socket.off("video-call-offer");
+      socket.off("call-rejected");
     };
   }, [chat]);
 
   useEffect(() => {
-    // Hide context menu on click anywhere
     const hideMenu = () =>
       setContextMenu({ visible: false, x: 0, y: 0, msgId: null });
     window.addEventListener("click", hideMenu);
@@ -105,9 +125,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const fetchMessages = async (chatId) => {
     try {
       setLoadingMessages(true);
-      const res = await axios.get(
-        `${API_BASE_URL}/api/messages/${chatId}`
-      );
+      const res = await axios.get(`${API_BASE_URL}/api/messages/${chatId}`);
       setMessages(res.data);
       scrollToBottom();
     } catch (err) {
@@ -276,48 +294,15 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     <div className="d-flex flex-column h-100">
       {/* Header */}
       <div className="border-bottom d-flex p-3 bg-black shadow-sm sticky-top align-items-center">
-        <div className="d-flex align-items-center" style={{ width: 50, height: 50 }}>
-        {chat.isGroupChat ? (
-          chat.groupPhoto ? (
-            <img
-              src={chat.groupPhoto}
-              alt="Group"
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                border: "2px solid #e0e0e0",
-                background: "#fff",
-              }}
-              className=""
-            />
-          ) : (
-            <div
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: "50%",
-                background: "#e0e0e0",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 20,
-                color: "#888",
-              }}
-              className="me-2"
-            >
-              <span>
-                {chat.chatName ? chat.chatName[0].toUpperCase() : "G"}
-              </span>
-            </div>
-          )
-        ) : (
-          (() => {
-            const otherUser = chat.users.find((u) => u._id !== userId);
-            return otherUser?.profilePhoto ? (
+        <div
+          className="d-flex align-items-center"
+          style={{ width: 50, height: 50 }}
+        >
+          {chat.isGroupChat ? (
+            chat.groupPhoto ? (
               <img
-                src={otherUser.profilePhoto}
-                alt="User"
+                src={chat.groupPhoto}
+                alt="Group"
                 style={{
                   width: 40,
                   height: 40,
@@ -325,7 +310,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
                   border: "2px solid #e0e0e0",
                   background: "#fff",
                 }}
-                className="me-2"
+                className=""
               />
             ) : (
               <div
@@ -343,55 +328,94 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
                 className="me-2"
               >
                 <span>
-                  {otherUser?.fullName
-                    ? otherUser.fullName[0].toUpperCase()
-                    : otherUser?.username
-                    ? otherUser.username[0].toUpperCase()
-                    : "U"}
+                  {chat.chatName ? chat.chatName[0].toUpperCase() : "G"}
                 </span>
               </div>
-            );
-          })()
-        )}
+            )
+          ) : (
+            (() => {
+              const otherUser = chat.users.find((u) => u._id !== userId);
+              return otherUser?.profilePhoto ? (
+                <img
+                  src={otherUser.profilePhoto}
+                  alt="User"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    border: "2px solid #e0e0e0",
+                    background: "#fff",
+                  }}
+                  className="me-2"
+                />
+              ) : (
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "50%",
+                    background: "#e0e0e0",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 20,
+                    color: "#888",
+                  }}
+                  className="me-2"
+                >
+                  <span>
+                    {otherUser?.fullName
+                      ? otherUser.fullName[0].toUpperCase()
+                      : otherUser?.username
+                      ? otherUser.username[0].toUpperCase()
+                      : "U"}
+                  </span>
+                </div>
+              );
+            })()
+          )}
         </div>
         <div className="">
           {/* Chat Name */}
-        <h5 className="m-0 text-truncate" style={{ flex: 1 }}>
-          {chat.isGroupChat ? (
-            <span
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                setProfileUserId(null);
-                setShowProfile(true);
-              }}
-            >
-              {chat.chatName}
-            </span>
-          ) : (
-            <span
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                const otherUser = chat.users.find((u) => u._id !== userId);
-                setProfileUserId(otherUser?._id);
-                setShowProfile(true);
-              }}
-            >
-              {chat.users.find((u) => u._id !== userId)?.fullName}
-            </span>
-          )}
-        </h5>
+          <h5 className="m-0 text-truncate" style={{ flex: 1 }}>
+            {chat.isGroupChat ? (
+              <span
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  setProfileUserId(null);
+                  setShowProfile(true);
+                }}
+              >
+                {chat.chatName}
+              </span>
+            ) : (
+              <span
+                style={{ cursor: "pointer" }}
+                onClick={() => {
+                  const otherUser = chat.users.find((u) => u._id !== userId);
+                  setProfileUserId(otherUser?._id);
+                  setShowProfile(true);
+                }}
+              >
+                {chat.users.find((u) => u._id !== userId)?.fullName}
+              </span>
+            )}
+          </h5>
 
           {/* Online status for 1-to-1 */}
-        {!chat.isGroupChat &&
-          onlineUsers.includes(
-            String(
-              chat.users.find((u) => String(u._id) !== String(userId))?._id
-            )
-          ) && (
-            <span className="text-success fw-semibold" style={{ fontSize: "0.75rem" }}>
-              Online
-            </span>
-          )}
+          {!chat.isGroupChat &&
+            onlineUsers.includes(
+              String(
+                chat.users.find((u) => String(u._id) !== String(userId))?._id
+              )
+            ) && (
+              <span
+                className="text-success fw-semibold"
+                style={{ fontSize: "0.75rem" }}
+              >
+                Online
+              </span>
+            )}
         </div>
 
         {/* Video Call Button - Only for 1-to-1 chats */}
@@ -409,7 +433,6 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
               }}
               title="Start Voice Call"
               onClick={() => setShowVoiceCall(true)} // For future use
-              
             >
               <MdCall size={22} color="#1976d2" />
             </Button>
@@ -431,6 +454,37 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
           </>
         )}
       </div>
+
+      {incomingVideoCall && (
+        <Modal show centered onHide={() => setIncomingVideoCall(null)}>
+          <Modal.Header closeButton>
+            <Modal.Title>Incoming Video Call</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            {incomingVideoCall.caller?.fullName || "Someone"} is calling...
+          </Modal.Body>
+          <Modal.Footer>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                socket.emit("call-rejected", { to: incomingVideoCall.from });
+                setIncomingVideoCall(null);
+              }}
+            >
+              Reject
+            </Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                setShowVideoCall(true);
+                setIncomingVideoCall(null);
+              }}
+            >
+              Accept
+            </Button>
+          </Modal.Footer>
+        </Modal>
+      )}
 
       {/* Messages */}
       <div
@@ -498,15 +552,14 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         <VoiceCall
           userId={userId}
           remoteUserId={otherUser._id}
-          localUser={currentUserObject}      // Pass the real user object
-          remoteUser={otherUser}             // Pass the real other user object
+          localUser={currentUserObject} // Pass the real user object
+          remoteUser={otherUser} // Pass the real other user object
           onClose={() => setShowVoiceCall(false)}
         />
       )}
     </div>
   );
 };
-
 
 const StartChatModal = ({
   show,

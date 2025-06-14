@@ -73,14 +73,22 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
     });
 
     return () => {
-      socket.off("video-call-offer");
-      socket.off("video-call-answer");
-      socket.off("ice-candidate");
-      pc.current && pc.current.close();
-    };
-  }, [remoteUserId]);
+    if (localVideo.current && localVideo.current.srcObject) {
+      localVideo.current.srcObject.getTracks().forEach(track => track.stop());
+      localVideo.current.srcObject = null;
+    }
+    if (remoteVideo.current && remoteVideo.current.srcObject) {
+      remoteVideo.current.srcObject.getTracks().forEach(track => track.stop());
+      remoteVideo.current.srcObject = null;
+    }
+    socket.off("video-call-offer");
+    socket.off("video-call-answer");
+    socket.off("ice-candidate");
+    pc.current && pc.current.close();
+  };
+}, [remoteUserId]);
 
-  // To start a call
+
   const startCall = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
@@ -94,11 +102,20 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
     }
   };
 
-  // Hang up: close peer connection and overlay
-  const hangUp = () => {
-    pc.current && pc.current.close();
-    onClose();
-  };
+const hangUp = () => {
+  
+  if (localVideo.current && localVideo.current.srcObject) {
+    localVideo.current.srcObject.getTracks().forEach(track => track.stop());
+    localVideo.current.srcObject = null;
+  }
+
+  if (remoteVideo.current && remoteVideo.current.srcObject) {
+    remoteVideo.current.srcObject.getTracks().forEach(track => track.stop());
+    remoteVideo.current.srcObject = null;
+  }
+  pc.current && pc.current.close();
+  onClose();
+};
 
   return (
     <div style={overlayStyle}>

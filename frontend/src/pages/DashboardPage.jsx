@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { Container } from "react-bootstrap";
+import { Container, Modal, Button } from "react-bootstrap";
 import axios from "axios";
+import { io } from "socket.io-client";
 import Sidebar from "../components/Sidebar";
 import ChatWindow from "../components/ChatWindow";
 import MiniSidebar from "../components/MiniSidebar";
 import Settings from "../components/Settings";
-
+import VideoCall from "../components/VideoCall";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const socket = io(import.meta.env.VITE_SOCKET_URL);
 
 const DashboardPage = () => {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -15,53 +17,104 @@ const DashboardPage = () => {
 
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
-  const [showSettings, setShowSettings] = useState(false); // <-- Add state
-  const [showProfile, setShowProfile] = useState(false);
-  const [profileUserId, setProfileUserId] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
+  const [incomingVideoCall, setIncomingVideoCall] = useState(null);
+  const [showVideoCall, setShowVideoCall] = useState(false);
+  const [remoteUserId, setRemoteUserId] = useState(null);
 
-  // Fetch chats for the current user
-  const fetchChats = async () => {
-    try {
-      const res = await axios.post(`${API_BASE_URL}/api/chat/fetch`, {
-        currentUserId,
-      });
-      setChats(res.data);
-    } catch (err) {
-      console.error("Failed to fetch chats", err);
-    }
-  };
-
-  // Fetch chats on page load and whenever chats are updated
+  // Fetch Chats Once
   useEffect(() => {
-    fetchChats();
-  }, [chats]); // Whenever chats change, re-fetch
+    const fetchChats = async () => {
+      try {
+        const res = await axios.post(`${API_BASE_URL}/api/chat/fetch`, {
+          currentUserId,
+        });
+        setChats(res.data);
+      } catch (err) {
+        console.error("Failed to fetch chats", err);
+      }
+    };
 
-  // Handle new chat creation (no duplicates in sidebar)
+    fetchChats();
+  }, [currentUserId]);
+
+  // Socket Register + Incoming Call Listener
+  useEffect(() => {
+    socket.emit("register", currentUserId);
+
+    socket.on("video-call-offer", ({ from, caller }) => {
+      console.log("📞 Incoming video call from:", caller?.fullName || from);
+      setIncomingVideoCall({ from, caller });
+    });
+
+    socket.on("call-rejected", () => {
+      alert("Call rejected");
+      setShowVideoCall(false);
+    });
+
+    return () => {
+      socket.off("video-call-offer");
+      socket.off("call-rejected");
+    };
+  }, [currentUserId]);
+
   const handleStartNewChat = (newChat) => {
-    setChats((prevChats) => {
-      // Avoid duplicates
-      const isDuplicate = prevChats.some((chat) => chat._id === newChat._id);
-      if (isDuplicate) return prevChats;
-      return [newChat, ...prevChats];
+    setChats((prev) => {
+      const exists = prev.some((c) => c._id === newChat._id);
+      return exists ? prev : [newChat, ...prev];
     });
     setSelectedChat(newChat);
-  };
-
-  const handleOpenSettings = () => {
-    setShowSettings(true); // <-- Show settings
-  };
-
-  const handleCloseSettings = () => {
-    setShowSettings(false); // <-- Hide settings
-  };
-
-  const handleCreateGroup = () => {
-    console.log("Open Group Chat Creation UI");
   };
 
   return (
     <Container fluid className="vh-100 p-0">
       <div className="d-flex h-100">
+
+        {/* 🔔 Incoming Call Modal */}
+        {incomingVideoCall && (
+          <Modal show centered onHide={() => setIncomingVideoCall(null)}>
+            <Modal.Header closeButton>
+              <Modal.Title>Incoming Video Call</Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {incomingVideoCall.caller?.fullName || "Someone"} is calling...
+            </Modal.Body>
+            <Modal.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  socket.emit("call-rejected", { to: incomingVideoCall.from });
+                  setIncomingVideoCall(null);
+                }}
+              >
+                Reject
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => {
+                  setRemoteUserId(incomingVideoCall.from); // ✅ key fix
+                  setShowVideoCall(true);
+                  setIncomingVideoCall(null);
+                }}
+              >
+                Accept
+              </Button>
+            </Modal.Footer>
+          </Modal>
+        )}
+
+        {/* 📹 Video Call Component */}
+        {showVideoCall && remoteUserId && (
+          <VideoCall
+            userId={currentUserId}
+            remoteUserId={remoteUserId}
+            onClose={() => {
+              setShowVideoCall(false);
+              setRemoteUserId(null);
+            }}
+          />
+        )}
+
         {/* Mini Sidebar */}
         <div
           style={{
@@ -71,8 +124,8 @@ const DashboardPage = () => {
           }}
         >
           <MiniSidebar
-            onOpenSettings={handleOpenSettings}
-            onCreateGroup={handleCreateGroup}
+            onOpenSettings={() => setShowSettings(true)}
+            onCreateGroup={() => console.log("Open Group Chat Creation UI")}
           />
         </div>
 
@@ -88,7 +141,6 @@ const DashboardPage = () => {
             />
           ) : (
             <>
-              {/* Sidebar */}
               <div
                 style={{
                   width: "300px",
@@ -102,12 +154,11 @@ const DashboardPage = () => {
                   userId={currentUserId}
                 />
               </div>
-              {/* Chat Window */}
               <div className="flex-grow-1">
                 <ChatWindow
                   chat={selectedChat}
                   userId={currentUserId}
-                  currentUserObject={user} // Pass the real user object here
+                  currentUserObject={user}
                   onStartNewChat={handleStartNewChat}
                 />
               </div>

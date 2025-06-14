@@ -132,9 +132,15 @@ io.on("connection", (socket) => {
     console.log("🔴 Client disconnected:", socket.id);
   });
 
-  // Video call signaling
-  socket.on("video-call", ({ to, offer, from }) => {
-    io.to(to).emit("video-call-offer", { offer, from });
+  socket.on("register", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
+
+  socket.on("video-call", ({ to, offer, from, caller }) => {
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("video-call-offer", { offer, from, caller });
+    }
   });
 
   socket.on("video-answer", ({ to, answer }) => {
