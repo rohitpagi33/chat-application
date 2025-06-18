@@ -17,7 +17,7 @@ import MessageList from "./MessageList";
 import MessageInput from "./MessageInput";
 import { formatDate, renderFile } from "../utils/chatUtils";
 import VideoCall from "./VideoCall";
-import VoiceCall from "./VoiceCall"; // Add this import
+import VoiceCall from "./VoiceCall";
 import { MdVideoCall } from "react-icons/md";
 import { MdCall } from "react-icons/md";
 
@@ -467,7 +467,9 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
             <Button
               variant="secondary"
               onClick={() => {
-                socket.emit("call-rejected", { to: incomingVideoCall.from });
+                if (incomingVideoCall?.from) {
+                  socket.emit("call-rejected", { to: incomingVideoCall.from });
+                }
                 setIncomingVideoCall(null);
               }}
             >
@@ -543,6 +545,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         <VideoCall
           userId={userId}
           remoteUserId={otherUser._id}
+          currentUser={currentUserObject}
           onClose={() => setShowVideoCall(false)}
         />
       )}

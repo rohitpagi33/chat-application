@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Container, Modal, Button } from "react-bootstrap";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -14,6 +14,8 @@ const socket = io(import.meta.env.VITE_SOCKET_URL);
 const DashboardPage = () => {
   const user = JSON.parse(localStorage.getItem("user"));
   const currentUserId = user._id;
+
+  const videoCallRef = useRef(null);
 
   const [chats, setChats] = useState([]);
   const [selectedChat, setSelectedChat] = useState(null);
@@ -38,7 +40,6 @@ const DashboardPage = () => {
     fetchChats();
   }, [currentUserId]);
 
-  // Socket Register + Incoming Call Listener
   useEffect(() => {
     socket.emit("register", currentUserId);
 
@@ -49,6 +50,9 @@ const DashboardPage = () => {
 
     socket.on("call-rejected", () => {
       alert("Call rejected");
+      if (videoCallRef.current) {
+        videoCallRef.current.stopMedia();
+      }
       setShowVideoCall(false);
     });
 
@@ -106,6 +110,7 @@ const DashboardPage = () => {
         {/* 📹 Video Call Component */}
         {showVideoCall && remoteUserId && (
           <VideoCall
+          ref={videoCallRef}
             userId={currentUserId}
             remoteUserId={remoteUserId}
             onClose={() => {

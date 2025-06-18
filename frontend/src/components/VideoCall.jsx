@@ -27,7 +27,7 @@ const closeBtnStyle = {
   zIndex: 10001,
 };
 
-const VideoCall = ({ userId, remoteUserId, onClose }) => {
+const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
   const localVideo = useRef();
   const remoteVideo = useRef();
   const pc = useRef(null);
@@ -40,7 +40,10 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
 
     pc.current.onicecandidate = (event) => {
       if (event.candidate) {
-        socket.emit("ice-candidate", { to: remoteUserId, candidate: event.candidate });
+        socket.emit("ice-candidate", {
+          to: remoteUserId,
+          candidate: event.candidate,
+        });
       }
     };
 
@@ -49,8 +52,13 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
     };
 
     socket.on("video-call-offer", async ({ offer, from }) => {
-      await pc.current.setRemoteDescription(new window.RTCSessionDescription(offer));
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      await pc.current.setRemoteDescription(
+        new window.RTCSessionDescription(offer)
+      );
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
       localVideo.current.srcObject = stream;
       const answer = await pc.current.createAnswer();
@@ -60,62 +68,90 @@ const VideoCall = ({ userId, remoteUserId, onClose }) => {
     });
 
     socket.on("video-call-answer", async ({ answer }) => {
-      await pc.current.setRemoteDescription(new window.RTCSessionDescription(answer));
+      await pc.current.setRemoteDescription(
+        new window.RTCSessionDescription(answer)
+      );
       setCallStarted(true);
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
       if (candidate) {
         try {
-          await pc.current.addIceCandidate(new window.RTCIceCandidate(candidate));
+          await pc.current.addIceCandidate(
+            new window.RTCIceCandidate(candidate)
+          );
         } catch (e) {}
       }
     });
 
-    return () => {
-    if (localVideo.current && localVideo.current.srcObject) {
-      localVideo.current.srcObject.getTracks().forEach(track => track.stop());
-      localVideo.current.srcObject = null;
-    }
-    if (remoteVideo.current && remoteVideo.current.srcObject) {
-      remoteVideo.current.srcObject.getTracks().forEach(track => track.stop());
-      remoteVideo.current.srcObject = null;
-    }
-    socket.off("video-call-offer");
-    socket.off("video-call-answer");
-    socket.off("ice-candidate");
-    pc.current && pc.current.close();
-  };
-}, [remoteUserId]);
+    socket.on("call-rejected", () => {
+      alert("Call was rejected.");
+      hangUp();
+    });
 
+    return () => {
+      if (localVideo.current && localVideo.current.srcObject) {
+        localVideo.current.srcObject
+          .getTracks()
+          .forEach((track) => track.stop());
+        localVideo.current.srcObject = null;
+      }
+      if (remoteVideo.current && remoteVideo.current.srcObject) {
+        remoteVideo.current.srcObject
+          .getTracks()
+          .forEach((track) => track.stop());
+        remoteVideo.current.srcObject = null;
+      }
+      socket.off("video-call-offer");
+      socket.off("video-call-answer");
+      socket.off("call-rejected");
+      socket.off("ice-candidate");
+      pc.current && pc.current.close();
+    };
+  }, [remoteUserId]);
 
   const startCall = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: true,
+        audio: true,
+      });
       stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
       localVideo.current.srcObject = stream;
       const offer = await pc.current.createOffer();
       await pc.current.setLocalDescription(offer);
-      socket.emit("video-call", { to: remoteUserId, offer, from: userId });
+
+      socket.emit("video-call", {
+        to: remoteUserId,
+        offer,
+        from: userId,
+        caller: {
+          _id: userId,
+          fullName: currentUser.fullName,
+          username: currentUser.username,
+          profilePhoto: currentUser.profilePhoto,
+        },
+      });
     } catch (err) {
       alert("Camera or microphone not found or not allowed.");
     }
   };
 
-const hangUp = () => {
-  
-  if (localVideo.current && localVideo.current.srcObject) {
-    localVideo.current.srcObject.getTracks().forEach(track => track.stop());
-    localVideo.current.srcObject = null;
-  }
+  const hangUp = () => {
+    if (localVideo.current && localVideo.current.srcObject) {
+      localVideo.current.srcObject.getTracks().forEach((track) => track.stop());
+      localVideo.current.srcObject = null;
+    }
 
-  if (remoteVideo.current && remoteVideo.current.srcObject) {
-    remoteVideo.current.srcObject.getTracks().forEach(track => track.stop());
-    remoteVideo.current.srcObject = null;
-  }
-  pc.current && pc.current.close();
-  onClose();
-};
+    if (remoteVideo.current && remoteVideo.current.srcObject) {
+      remoteVideo.current.srcObject
+        .getTracks()
+        .forEach((track) => track.stop());
+      remoteVideo.current.srcObject = null;
+    }
+    pc.current && pc.current.close();
+    onClose();
+  };
 
   return (
     <div style={overlayStyle}>

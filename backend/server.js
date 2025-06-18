@@ -143,6 +143,14 @@ io.on("connection", (socket) => {
     }
   });
 
+  socket.on("call-rejected", ({ to }) => {
+  const receiverSocketId = onlineUsers.get(to);
+  if (receiverSocketId) {
+    io.to(receiverSocketId).emit("call-rejected");
+  }
+});
+
+
   socket.on("video-answer", ({ to, answer }) => {
     io.to(to).emit("video-call-answer", { answer });
   });
