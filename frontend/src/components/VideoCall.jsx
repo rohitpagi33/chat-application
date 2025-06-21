@@ -1,5 +1,11 @@
-import React, { useRef, useEffect, useState } from "react";
-import socket from "../socket";
+import React, {
+  useRef,
+  useEffect,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
+import socket from "../socket"; // Make sure this exports an active socket.io-client instance
 
 const overlayStyle = {
   position: "fixed",
@@ -27,11 +33,29 @@ const closeBtnStyle = {
   zIndex: 10001,
 };
 
-const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
+const VideoCall = forwardRef(({ userId, remoteUserId, currentUser, onClose }, ref) => {
   const localVideo = useRef();
   const remoteVideo = useRef();
   const pc = useRef(null);
   const [callStarted, setCallStarted] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    stopMedia,
+  }));
+
+  const stopMedia = () => {
+    console.log("🛑 stopMedia called");
+    if (localVideo.current?.srcObject) {
+      localVideo.current.srcObject.getTracks().forEach(track => track.stop());
+      localVideo.current.srcObject = null;
+    }
+    if (remoteVideo.current?.srcObject) {
+      remoteVideo.current.srcObject.getTracks().forEach(track => track.stop());
+      remoteVideo.current.srcObject = null;
+    }
+    pc.current?.close();
+    pc.current = null;
+  };
 
   useEffect(() => {
     pc.current = new RTCPeerConnection({
@@ -52,15 +76,14 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
     };
 
     socket.on("video-call-offer", async ({ offer, from }) => {
-      await pc.current.setRemoteDescription(
-        new window.RTCSessionDescription(offer)
-      );
+      await pc.current.setRemoteDescription(new RTCSessionDescription(offer));
       const stream = await navigator.mediaDevices.getUserMedia({
         video: true,
         audio: true,
       });
-      stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
+      stream.getTracks().forEach(track => pc.current.addTrack(track, stream));
       localVideo.current.srcObject = stream;
+
       const answer = await pc.current.createAnswer();
       await pc.current.setLocalDescription(answer);
       socket.emit("video-answer", { to: from, answer });
@@ -68,45 +91,32 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
     });
 
     socket.on("video-call-answer", async ({ answer }) => {
-      await pc.current.setRemoteDescription(
-        new window.RTCSessionDescription(answer)
-      );
+      await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
       setCallStarted(true);
     });
 
     socket.on("ice-candidate", async ({ candidate }) => {
       if (candidate) {
         try {
-          await pc.current.addIceCandidate(
-            new window.RTCIceCandidate(candidate)
-          );
-        } catch (e) {}
+          await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Failed to add ICE candidate", e);
+        }
       }
     });
 
     socket.on("call-rejected", () => {
-      alert("Call was rejected.");
-      hangUp();
+      stopMedia();
+      onClose();
+      window.location.reload();
     });
 
     return () => {
-      if (localVideo.current && localVideo.current.srcObject) {
-        localVideo.current.srcObject
-          .getTracks()
-          .forEach((track) => track.stop());
-        localVideo.current.srcObject = null;
-      }
-      if (remoteVideo.current && remoteVideo.current.srcObject) {
-        remoteVideo.current.srcObject
-          .getTracks()
-          .forEach((track) => track.stop());
-        remoteVideo.current.srcObject = null;
-      }
+      stopMedia();
       socket.off("video-call-offer");
       socket.off("video-call-answer");
       socket.off("call-rejected");
       socket.off("ice-candidate");
-      pc.current && pc.current.close();
     };
   }, [remoteUserId]);
 
@@ -116,8 +126,9 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
         video: true,
         audio: true,
       });
-      stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
+      stream.getTracks().forEach(track => pc.current.addTrack(track, stream));
       localVideo.current.srcObject = stream;
+
       const offer = await pc.current.createOffer();
       await pc.current.setLocalDescription(offer);
 
@@ -133,23 +144,12 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
         },
       });
     } catch (err) {
-      alert("Camera or microphone not found or not allowed.");
+      alert("Camera or microphone not available or not permitted.");
     }
   };
 
   const hangUp = () => {
-    if (localVideo.current && localVideo.current.srcObject) {
-      localVideo.current.srcObject.getTracks().forEach((track) => track.stop());
-      localVideo.current.srcObject = null;
-    }
-
-    if (remoteVideo.current && remoteVideo.current.srcObject) {
-      remoteVideo.current.srcObject
-        .getTracks()
-        .forEach((track) => track.stop());
-      remoteVideo.current.srcObject = null;
-    }
-    pc.current && pc.current.close();
+    stopMedia();
     onClose();
   };
 
@@ -158,6 +158,7 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
       <button style={closeBtnStyle} onClick={hangUp} title="Close">
         &times;
       </button>
+
       <div
         style={{
           display: "flex",
@@ -171,6 +172,7 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
         <video
           ref={remoteVideo}
           autoPlay
+          playsInline
           style={{
             width: "60vw",
             height: "70vh",
@@ -184,6 +186,7 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
           ref={localVideo}
           autoPlay
           muted
+          playsInline
           style={{
             width: "20vw",
             height: "20vh",
@@ -198,6 +201,7 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
           }}
         />
       </div>
+
       {!callStarted && (
         <button
           onClick={startCall}
@@ -223,6 +227,7 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
           Start Call
         </button>
       )}
+
       {callStarted && (
         <button
           onClick={hangUp}
@@ -250,6 +255,6 @@ const VideoCall = ({ userId, remoteUserId, currentUser, onClose }) => {
       )}
     </div>
   );
-};
+});
 
 export default VideoCall;

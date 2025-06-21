@@ -58,6 +58,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
   const [uploading, setUploading] = useState(false);
 
   const [incomingVideoCall, setIncomingVideoCall] = useState(null);
+  const videoCallRef = useRef(null);
 
   useEffect(() => {
     if (userId) {
@@ -73,6 +74,25 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
         setOnlineUsers(users);
       });
 
+      socket.on("voice-call-offer", ({ offer, from, caller }) => {
+        console.log(
+          "📞 Incoming voice call offer from",
+          caller?.fullName || from
+        );
+        if (chat.users.some((u) => u._id === from)) {
+          setShowVoiceCall(true);
+        }
+      });
+
+      socket.on("video-call-offer", ({ from, caller }) => {
+        if (chat.users.some((u) => u._id === from)) {
+          // Auto reject:
+          socket.emit("call-rejected", { to: from });
+          // Or to auto accept:
+          // setShowVideoCall(true);
+        }
+      });
+
       socket.on("video-call-offer", ({ from, caller }) => {
         console.log("📞 Incoming call from", caller?.fullName || from);
         if (chat.users.some((u) => u._id === from)) {
@@ -81,7 +101,19 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
       });
 
       socket.on("call-rejected", () => {
-        alert("Call rejected");
+        if (videoCallRef.current) {
+          try {
+            videoCallRef.current.stopMedia();
+            setTimeout(() => {
+              window.location.reload();
+            }, 200);
+          } catch (e) {
+            console.error("Error stopping media:", e);
+            window.location.reload();
+          }
+        } else {
+          window.location.reload();
+        }
         setShowVideoCall(false);
       });
 
@@ -107,6 +139,7 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
     }
 
     return () => {
+      socket.off("voice-call-offer");
       socket.off("receive-message");
       socket.off("messages-read");
       socket.off("update-online-users");
@@ -467,8 +500,9 @@ const ChatWindow = ({ chat, userId, currentUserObject, onStartNewChat }) => {
             <Button
               variant="secondary"
               onClick={() => {
-                if (incomingVideoCall?.from) {
-                  socket.emit("call-rejected", { to: incomingVideoCall.from });
+                socket.emit("call-rejected", { to: incomingVideoCall.from });
+                if (videoCallRef.current) {
+                  videoCallRef.current.stopMedia();
                 }
                 setIncomingVideoCall(null);
               }}

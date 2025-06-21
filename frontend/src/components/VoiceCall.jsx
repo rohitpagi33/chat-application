@@ -1,5 +1,5 @@
-import React, { useRef, useEffect, useState } from "react";
-import socket from "../socket";
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from "react";
+import socket from "../socket"; // Your socket.io client instance
 import { MdCall } from "react-icons/md";
 
 const overlayStyle = {
@@ -35,12 +35,18 @@ function getInitials(user) {
   return "?";
 }
 
-const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => {
+const VoiceCall = forwardRef(({ userId, remoteUserId, localUser, remoteUser, onClose }, ref) => {
   const localAudio = useRef();
   const remoteAudio = useRef();
   const pc = useRef(null);
+
   const [callStarted, setCallStarted] = useState(false);
   const [incomingCall, setIncomingCall] = useState(null);
+
+  // Allow parent to call stopMedia via ref
+  useImperativeHandle(ref, () => ({
+    stopMedia,
+  }));
 
   useEffect(() => {
     pc.current = new RTCPeerConnection({
@@ -54,40 +60,59 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
     };
 
     pc.current.ontrack = (event) => {
-      remoteAudio.current.srcObject = event.streams[0];
+      if (remoteAudio.current) {
+        remoteAudio.current.srcObject = event.streams[0];
+      }
     };
 
+    // Listen for incoming call offers
     socket.on("voice-call-offer", ({ offer, from, caller }) => {
+      console.log("Incoming voice call offer from:", from, caller);
       setIncomingCall({ offer, from, caller });
     });
 
+    // Listen for answer to our offer
     socket.on("voice-call-answer", async ({ answer }) => {
-      await pc.current.setRemoteDescription(new window.RTCSessionDescription(answer));
-      setCallStarted(true);
+      try {
+        await pc.current.setRemoteDescription(new RTCSessionDescription(answer));
+        setCallStarted(true);
+      } catch (err) {
+        console.error("Error setting remote description on answer:", err);
+      }
     });
 
+    // Listen for ICE candidates from remote peer
     socket.on("voice-ice-candidate", async ({ candidate }) => {
       if (candidate) {
         try {
-          await pc.current.addIceCandidate(new window.RTCIceCandidate(candidate));
-        } catch (e) {}
+          await pc.current.addIceCandidate(new RTCIceCandidate(candidate));
+        } catch (e) {
+          console.error("Error adding ICE candidate:", e);
+        }
       }
+    });
+
+    // Call rejected by remote
+    socket.on("voice-call-rejected", () => {
+      alert("Call was rejected by the other user.");
+      hangUp();
     });
 
     return () => {
       socket.off("voice-call-offer");
       socket.off("voice-call-answer");
       socket.off("voice-ice-candidate");
-      pc.current && pc.current.close();
+      socket.off("voice-call-rejected");
+      if (pc.current) pc.current.close();
     };
   }, [remoteUserId]);
 
-  // To start a call
+  // Start outgoing call
   const startCall = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
-      localAudio.current.srcObject = stream;
+      if(localAudio.current) localAudio.current.srcObject = stream;
       const offer = await pc.current.createOffer();
       await pc.current.setLocalDescription(offer);
       socket.emit("voice-call", {
@@ -102,34 +127,59 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
       });
       setCallStarted(true);
     } catch (err) {
-      alert("Microphone not found or not allowed.");
+      alert("Microphone not found or permission denied.");
+      console.error(err);
     }
   };
 
   // Accept incoming call
   const acceptCall = async () => {
     if (!incomingCall) return;
-    await pc.current.setRemoteDescription(new window.RTCSessionDescription(incomingCall.offer));
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
-    localAudio.current.srcObject = stream;
-    const answer = await pc.current.createAnswer();
-    await pc.current.setLocalDescription(answer);
-    socket.emit("voice-answer", { to: incomingCall.from, answer });
-    setCallStarted(true);
-    setIncomingCall(null);
+    try {
+      await pc.current.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => pc.current.addTrack(track, stream));
+      if(localAudio.current) localAudio.current.srcObject = stream;
+      const answer = await pc.current.createAnswer();
+      await pc.current.setLocalDescription(answer);
+      socket.emit("voice-answer", { to: incomingCall.from, answer });
+      setCallStarted(true);
+      setIncomingCall(null);
+    } catch (err) {
+      alert("Failed to accept call.");
+      console.error(err);
+    }
   };
 
   // Reject incoming call
   const rejectCall = () => {
+    if (incomingCall) {
+      socket.emit("voice-call-reject", { to: incomingCall.from });
+    }
     setIncomingCall(null);
+    stopMedia();
     onClose && onClose();
   };
 
-  // Hang up: close peer connection and overlay
+  const stopMedia = () => {
+    if (localAudio.current?.srcObject) {
+      localAudio.current.srcObject.getTracks().forEach((track) => track.stop());
+      localAudio.current.srcObject = null;
+    }
+    if (remoteAudio.current?.srcObject) {
+      remoteAudio.current.srcObject.getTracks().forEach((track) => track.stop());
+      remoteAudio.current.srcObject = null;
+    }
+  };
+
+  // Hang up the call
   const hangUp = () => {
-    pc.current && pc.current.close();
-    onClose();
+    if (pc.current) {
+      pc.current.close();
+      pc.current = null;
+    }
+    stopMedia();
+    onClose && onClose();
   };
 
   return (
@@ -137,6 +187,8 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
       <button style={closeBtnStyle} onClick={hangUp} title="Close">
         &times;
       </button>
+
+      {/* Incoming call UI */}
       {incomingCall ? (
         <div
           style={{
@@ -150,9 +202,7 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
             zIndex: 10001,
           }}
         >
-          <div style={{ marginBottom: 16, fontSize: 22, fontWeight: 600 }}>
-            Incoming Call
-          </div>
+          <div style={{ marginBottom: 16, fontSize: 22, fontWeight: 600 }}>Incoming Call</div>
           {incomingCall.caller?.profilePhoto ? (
             <img
               src={incomingCall.caller.profilePhoto}
@@ -222,6 +272,7 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
         </div>
       ) : (
         <>
+          {/* Default Voice Call UI */}
           <div
             style={{
               color: "#fff",
@@ -354,59 +405,53 @@ const VoiceCall = ({ userId, remoteUserId, localUser, remoteUser, onClose }) => 
                   display: "block",
                 }}
               >
-                {remoteUser?.fullName || remoteUser?.username || "User"}
+                {remoteUser?.fullName || remoteUser?.username || "Caller"}
               </span>
             </div>
           </div>
-          <audio ref={remoteAudio} autoPlay style={{ width: "100%" }} />
-          <audio ref={localAudio} autoPlay muted style={{ display: "none" }} />
-          <div style={{ width: 320, margin: "0 auto" }}>
-            {!callStarted ? (
-              <button
-                onClick={startCall}
-                style={{
-                  width: "100%",
-                  padding: "14px 0",
-                  fontSize: 20,
-                  borderRadius: 12,
-                  background: "linear-gradient(90deg, #1976d2 60%, #00eaff 100%)",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  letterSpacing: 1,
-                  boxShadow: "0 2px 16px #1976d288",
-                  marginTop: 8,
-                }}
-              >
-                Start Call
-              </button>
-            ) : (
-              <button
-                onClick={hangUp}
-                style={{
-                  width: "100%",
-                  padding: "14px 0",
-                  fontSize: 20,
-                  borderRadius: 12,
-                  background: "linear-gradient(90deg, #d32f2f 60%, #ff1744 100%)",
-                  color: "#fff",
-                  border: "none",
-                  cursor: "pointer",
-                  fontWeight: 700,
-                  letterSpacing: 1,
-                  boxShadow: "0 2px 16px #d32f2f88",
-                  marginTop: 8,
-                }}
-              >
-                Hang Up
-              </button>
-            )}
-          </div>
+
+          {/* Local and Remote audio elements, hidden */}
+          <audio ref={localAudio} autoPlay muted />
+          <audio ref={remoteAudio} autoPlay />
+
+          {/* Controls */}
+          {!callStarted ? (
+            <button
+              onClick={startCall}
+              style={{
+                width: "320px",
+                background: "#1976d2",
+                color: "#fff",
+                border: "none",
+                borderRadius: 32,
+                padding: "14px 48px",
+                fontSize: 18,
+                cursor: "pointer",
+              }}
+            >
+              Start Call
+            </button>
+          ) : (
+            <button
+              onClick={hangUp}
+              style={{
+                width: "320px",
+                background: "#d32f2f",
+                color: "#fff",
+                border: "none",
+                borderRadius: 32,
+                padding: "14px 48px",
+                fontSize: 18,
+                cursor: "pointer",
+              }}
+            >
+              Hang Up
+            </button>
+          )}
         </>
       )}
     </div>
   );
-};
+});
 
 export default VoiceCall;

@@ -1,6 +1,6 @@
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 dotenv.config();
-import express from 'express';
+import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import http from "http";
@@ -25,9 +25,7 @@ app.use((req, res, next) => {
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173"
-    ],
+    origin: ["http://localhost:5173"],
     credentials: true,
   })
 );
@@ -46,15 +44,12 @@ app.get("*", (_, res) => {
   res.sendFile(path.resolve(__dirname, "frontend", "dist", "index.html"));
 });
 
-
 // Create server for socket.io
 const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: [
-      "http://localhost:5173"
-    ],
+    origin: ["http://localhost:5173"],
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -144,12 +139,11 @@ io.on("connection", (socket) => {
   });
 
   socket.on("call-rejected", ({ to }) => {
-  const receiverSocketId = onlineUsers.get(to);
-  if (receiverSocketId) {
-    io.to(receiverSocketId).emit("call-rejected");
-  }
-});
-
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("call-rejected");
+    }
+  });
 
   socket.on("video-answer", ({ to, answer }) => {
     io.to(to).emit("video-call-answer", { answer });
@@ -157,6 +151,28 @@ io.on("connection", (socket) => {
 
   socket.on("ice-candidate", ({ to, candidate }) => {
     io.to(to).emit("ice-candidate", { candidate });
+  });
+
+  socket.on("voice-call", ({ to, offer, from, caller }) => {
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("voice-call-offer", { offer, from, caller });
+    }
+  });
+
+  socket.on("voice-answer", ({ to, answer }) => {
+    io.to(to).emit("voice-call-answer", { answer });
+  });
+
+  socket.on("voice-ice-candidate", ({ to, candidate }) => {
+    io.to(to).emit("voice-ice-candidate", { candidate });
+  });
+
+  socket.on("voice-call-rejected", ({ to }) => {
+    const receiverSocketId = onlineUsers.get(to);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("voice-call-rejected");
+    }
   });
 });
 
