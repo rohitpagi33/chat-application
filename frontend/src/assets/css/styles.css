@@ -153,7 +153,6 @@ img {
   width: 100%;
   padding: 1rem;
   border-radius: 0.5rem;
-  background-color: var(--white-color);
   font-weight: var(--font-medium);
   cursor: pointer;
   margin-bottom: 2rem;
@@ -181,7 +180,6 @@ img {
   font-size: var(--small-font-size);
 }
 
-/*=============== BREAKPOINTS ===============*/
 /* For medium devices */
 @media screen and (min-width: 576px) {
   .login {

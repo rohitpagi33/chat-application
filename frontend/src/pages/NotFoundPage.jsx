@@ -1,17 +1,3 @@
-// // src/pages/NotFoundPage.js
-// import React from 'react';
-// import { Container } from 'react-bootstrap';
-
-// const NotFoundPage = () => (
-//   <Container className="mt-4">
-//     <h2>404 - Page Not Found</h2>
-//     <p>The page you're looking for doesn't exist.</p>
-//   </Container>
-// );
-
-// export default NotFoundPage;
-
-// src/pages/NotFound.jsx
 import React from "react";
 import "../assets/css/NotFound.css";
 

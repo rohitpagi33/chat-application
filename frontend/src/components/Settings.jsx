@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { FaArrowLeft, FaEdit, FaSave } from "react-icons/fa";
+import { FaArrowLeft, FaEdit, FaSave, FaSignOutAlt } from "react-icons/fa";
 import axios from "axios";
 import { useAuth } from "../context/AuthContext";
 import { createClient } from "@supabase/supabase-js";
@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 // At the top of your file
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-const Settings = ({ onBack, onGoToChat }) => {
+const Settings = ({ onBack, onGoToChat, onLogout }) => {
   const { user, updateUser } = useAuth();
   if (!user) {
     return <div>Please log in to view your profile.</div>;
@@ -26,7 +26,7 @@ const Settings = ({ onBack, onGoToChat }) => {
   const [editMode, setEditMode] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [myGroups, setMyGroups] = useState([]);
-  const [originalUserData, setOriginalUserData] = useState(null); // <-- Added state for original data
+  const [originalUserData, setOriginalUserData] = useState(null);
 
   useEffect(() => {
     fetchUser();
@@ -102,11 +102,11 @@ const Settings = ({ onBack, onGoToChat }) => {
       const res = await axios.put(`${API_BASE_URL}/api/user/${user._id}`, {
         fullName: userData.fullName,
         email: userData.email,
-        profilePhoto: userData.profilePhoto, // <-- Save photo URL
+        profilePhoto: userData.profilePhoto,
       });
       setEditMode(false);
       fetchUser();
-      updateUser(res.data); // This updates context and localStorage
+      updateUser(res.data);
       alert("User updated successfully");
     } catch (err) {
       alert("Failed to update user");
@@ -114,18 +114,30 @@ const Settings = ({ onBack, onGoToChat }) => {
   };
 
   const handleEdit = () => {
-    setOriginalUserData(userData); // Save original data
+    setOriginalUserData(userData);
     setEditMode(true);
   };
 
   const handleCancel = () => {
-    setUserData(originalUserData); // Restore original data
+    setUserData(originalUserData);
     setEditMode(false);
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("Are you sure you want to logout?")) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+
+      if (onLogout) {
+        onLogout();
+      }
+      window.location.reload();
+    }
   };
 
   return (
     <div className="w-100 h-100 p-4" style={{ background: "#f7fafd", minHeight: "100vh" }}>
-      <div className="mb-4">
+      <div className="mb-4 d-flex justify-content-between align-items-center">
         <button
           className="d-flex align-items-center"
           onClick={onBack}
@@ -144,6 +156,35 @@ const Settings = ({ onBack, onGoToChat }) => {
           }}
         >
           <FaArrowLeft style={{ marginRight: 8 }} /> Back
+        </button>
+
+        {/* Logout Button */}
+        <button
+          className="d-flex align-items-center"
+          onClick={handleLogout}
+          style={{
+            background: "#dc3545",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            padding: "8px 18px",
+            fontWeight: 500,
+            fontSize: 15,
+            boxShadow: "0 2px 8px rgba(220, 53, 69, 0.3)",
+            cursor: "pointer",
+            transition: "all 0.2s",
+            width: "auto",
+          }}
+          onMouseOver={(e) => {
+            e.target.style.background = "#c82333";
+            e.target.style.transform = "translateY(-1px)";
+          }}
+          onMouseOut={(e) => {
+            e.target.style.background = "#dc3545";
+            e.target.style.transform = "translateY(0)";
+          }}
+        >
+          <FaSignOutAlt style={{ marginRight: 8 }} /> Logout
         </button>
       </div>
       <h3 className="text-center mb-4" style={{ fontWeight: 600, color: "#1976d2", letterSpacing: 1 }}>My Profile</h3>

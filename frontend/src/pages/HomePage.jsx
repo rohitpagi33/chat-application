@@ -1,4 +1,3 @@
-// src/pages/HomePage.js
 import React from 'react';
 import '../assets/css/styles.css';
 import { Container, Button } from 'react-bootstrap';

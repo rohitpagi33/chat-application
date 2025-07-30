@@ -1,12 +1,10 @@
-
-// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 import '../assets/css/styles.css';
 import 'remixicon/fonts/remixicon.css';
-// At the top of your file
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const LoginPage = () => {
@@ -32,7 +30,7 @@ const LoginPage = () => {
 const handleVerifyOtp = async () => {
   try {
     const res = await axios.post(`${API_BASE_URL}/api/auth/login-verify`, { identifier, otp });
-    login(res.data.user, res.data.token); // Save token
+    login(res.data.user, res.data.token);
     setMessage('Login successful!');
     navigate('/dashboard');
   } catch (err) {

@@ -54,10 +54,9 @@ cd chat-application
 ### 2. **Install dependencies**
 
 ```bash
-cd backend
 npm install
-cd ../frontend
-npm install
+npm run build
+npm start
 ```
 
 ### 3. **Configure environment variables**
@@ -65,17 +64,6 @@ npm install
 - Copy `.env.example` to `.env` in both `backend` and `frontend` folders.
 - Update with your credentials (MongoDB URI, JWT secret, Twilio, etc).
 
-### 4. **Start the servers**
-
-```bash
-# In one terminal
-cd backend
-npm start
-
-# In another terminal
-cd frontend
-npm start
-```
 
 ---
 
